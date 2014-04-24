@@ -3,6 +3,39 @@
 function finanzen_schema() {
   
   $schema = array();
+  
+  $schema['finanzen_user_hours_projects'] = array(
+    'description' => t('The number of hours that a user works on a project'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),   
+      'date' => array (
+        'type' => 'datetime',
+        'not null' => TRUE,
+      ), 
+      'hours' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'project' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1
+      ),  
+    ),
+    'primary key' => array('nid'),
+  );
 
   return $schema;
 }
