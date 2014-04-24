@@ -1,0 +1,3 @@
+name = "Finanzen Tool Heim&Balp"
+description = "Tool for the Heim&Balp Architecture Studio finance control"
+core = 6.x
