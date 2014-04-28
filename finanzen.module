@@ -3,7 +3,7 @@
 /**
  * @file
  *
- * Resource Reservation module
+ * Finanzen module
  */
  
  /**
@@ -40,638 +40,116 @@ function finanzen_menu() {
   $items['finanzen'] = array(
     'title' => t('Finanzen'),
     'description' => 'The module information page',
-    'page callback' => 'finanzen_infopage',
-    'access arguments' => array('administer finanzen'),
+    'page callback' => 'finanzen_mainpage',
+    'access arguments' => array('Add hours to projects'),
     'type' => MENU_CALLBACK,
   );
   
-#  $items['resourcereservation/add-reservation-round'] = array(
-#    'title' => t('Form to Add a Reservation Round'),
-#    'page callback' => 'resourcereservation_add_reservation_round',
-#    'access arguments' => array('administer reservation round'),
-#    'type' => MENU_CALLBACK,
-#  );
-#  
-#  $items['resourcereservation/view-reservation-round/%'] = array(
-#    'title' => t('Termin buchen'),
-#    'page callback' => 'resourcereservation_view_reservation_round',
-#    'page arguments' => array ( 2 ),
-#    'access arguments' => array('make reservation'),
-#    'type' => MENU_CALLBACK,
-#  );
-#  
-#  $items['resourcereservation/delete-reservation-round/%'] = array(
-#    'title' => t('Form to delete a Reservation Round'),
-#    'page callback' => 'resourcereservation_delete_reservation_round',
-#    'page arguments' => array ( 2 ),
-#    'access arguments' => array('administer reservation round'),
-#    'type' => MENU_CALLBACK,
-#  );
-#  
-#  $items['resourcereservation/activate-reservation-round/%'] = array(
-#    'title' => t('Datum aktivieren'),
-#    'page callback' => 'resourcereservation_activate_reservation_round',
-#    'page arguments' => array ( 2 ),
-#    'access arguments' => array('administer reservation round'),
-#    'type' => MENU_CALLBACK,
-#  );
-#  
-#  $items['resourcereservation/deactivate-reservation-round/%'] = array(
-#    'title' => t('Datum deaktivieren'),
-#    'page callback' => 'resourcereservation_deactivate_reservation_round',
-#    'page arguments' => array ( 2 ),
-#    'access arguments' => array('administer reservation round'),
-#    'type' => MENU_CALLBACK,
-#  );
-#  
-#  $items['resourcereservation/make-reservation/%'] = array(
-#    'title' => t('Termin buchen'),
-#    'page callback' => 'resourcereservation_make_reservation',
-#    'page arguments' => array ( 2 ),
-#    'access arguments' => array('make reservation'),
-#    'type' => MENU_CALLBACK,
-#  );
-#  
-#  $items['resourcereservation/delete-reservation/%'] = array(
-#    'title' => t('Termin loeschen'),
-#    'page callback' => 'resourcereservation_delete_reservation',
-#    'page arguments' => array ( 2 ),
-#    'access arguments' => array('make reservation'),
-#    'type' => MENU_CALLBACK,
-#  );
+  $items['finanzen/insert/%/%'] = array(
+   'title' => t('Add hours to Project'),
+   'page callback' => 'finanzen_insert',
+   'page arguments' => array ( 2, 3 ),
+   'access arguments' => array('Add hours to projects'),
+   'type' => MENU_CALLBACK,
+  );
 
   return $items;
 }
 
 /**
+ * This function calculates how many days has a given month 
+ */
+function _finanzen_days_in_month($month, $year) 
+{ 
+  // calculate number of days in a month 
+  return $month == 2 ? ($year % 4 ? 28 : ($year % 100 ? 29 : ($year % 400 ? 28 : 29))) : (($month - 1) % 7 % 2 ? 30 : 31); 
+} 
+
+/**
  * The default page for /finanzen url, now showing some basic
  * information.
  */
-function finanzen_infopage() {
-  // Breadcrumb navigation
-  drupal_set_breadcrumb(array(
-                             l(t('Home'), NULL),
-                             l(t('Finanzen'), 'finanzen')
-                        ));
-                        
-  $content = 'Inicial page: Finanzen';
+function finanzen_mainpage() {
+
+  global $user;                      
   
-#  $header = array
-#  (
-#    array('data' => t('Date'), 'field' => 'date', 'sort' => 'desc'),
-#  );
-#  
-#  $query = "SELECT rr.date, rr.nid, rr.date_timestamp, rr.active FROM {resourcereservation_round} rr";
-#  $query .= tablesort_sql ( $header );
-#  $queryResult =  db_query ( $query );
-#  
-#  $rows = array ();
-#  while ( $message = db_fetch_object ( $queryResult ) )
-#  {
-#    $row = array ();
-#    $row['date timestamp'] = format_date($message->date_timestamp, 'custom', 'l, d.m.Y');
-#    $row['view'] = l ( t('view'), "resourcereservation/view-reservation-round/" . $message->nid );
-#    if ($message->active) { 
-#      $row['deactivate'] = l ( t('Deaktivieren'), "resourcereservation/deactivate-reservation-round/" . $message->nid );
-#    }
-#    else { 
-#      $row['activate'] = l ( t('Aktivieren'), "resourcereservation/activate-reservation-round/" . $message->nid );
-#    }
-#    $row['delete'] = l ( t('delete'), "resourcereservation/delete-reservation-round/" . $message->nid );
-#    
-#    $rows[] = $row;
-#  }
-# 
-#  $content .= theme_table($header, $rows);
+  //This gets today's date
+  $date = time () ;
+  //This puts the day, month, and year in seperate variables
+  //$day = date('d', $date) ;
+  $month = date('m', $date) ;
+  $year = date('Y', $date) ;
+  //Here we generate the first day of the month
+  $first_day = mktime(0,0,0,$month, 1, $year) ;
+  
+  $content .= "Time Sheet for " . $user->name . " / " . date('F Y', $first_day) ;
+  $content .= "<br/>";
+  
+  $number_days = _finanzen_days_in_month($month, $year);
+
+  $all_groups = $user->og_groups;
+  
+  $array_header = array('date' => t("Date"));
+  
+  foreach ($all_groups as $group) {
+    $group_node = node_load ($group[nid]);
+    $array_header[] = $group_node->field_project_code[0]["value"];
+  }
+  
+  $rows = array ();
+  
+  for ($i = 1; $i <= $number_days; $i++) {
+    $day = mktime(0,0,0,$month, $i, $year);
+    $row = array ();
+    $row['date'] = date('l, d.m.Y', $day);
+    foreach ($all_groups as $group) {
+      $link = "finanzen/insert/" . $group[nid] . "/" . $day;
+      $row[$group[title]] = "0" . " hours <br/> " . l ( t('Modify'), $link ) ;
+    }
+
+    $rows[] = $row; 
+  }
+  
+  $content .= theme_table($array_header, $rows);
   
   return $content;
 }
 
-#/**
-# * The content page for /resourcereservation/add-reservation-round url.
-# * It cointais a Form to add a new Reservation Round
-# */
-#function resourcereservation_add_reservation_round() {
-#
-#  drupal_set_breadcrumb(array(
-#                             l(t('Home'), NULL),
-#                             l(t('Add Reservation Round'), 'resourcereservation/add-reservation-round')
-#                        ));
-#  
-#  $content = '';
-#  $content .= drupal_get_form ( 'add_reservation_round_form' );
-# 
-#  return $content;
-#}
-#
-#function add_reservation_round_form ()
-#{
-#  $form = array
-#  (
-#    'add_reservation_round' => array 
-#    ( 
-#      '#type' => 'fieldset', 
-#      '#title' => t( 'Add a Date for Reservation Round' ), 
-#      'date' => array ( '#type' => 'date', "#description"=>"Write here the date of the reservation round", '#after_build' => array('__set_year_range')),
-#      'submit' => array ( '#type' => 'submit',  '#value' => t('Submit'),  ),
-#
-#    ),
-#  );
-#  return $form;
-#}
-#
-#function __set_year_range($form_element, $form_values) {
-#    $year_now= gmdate('Y');
-#    $range_value = 1;
-#    $form_element['year']['#options'] = drupal_map_assoc(range($year_now, $range_value + $year_now));
-#    return $form_element;
-#}
-#
-#/*
-#function add_reservation_round_form_validate ( $form, &$form_state )
-#{
-#  $date = $form_state['values']['date'];
-#  if ( $date == '' )
-#    form_set_error( $form, t('Date cannot be empty.'));
-#}
-# */
-# 
-#function add_reservation_round_form_submit ( $form, &$form_state )
-#{
-#  global $user;
-#  $userid = NULL;
-#  if ( $user )
-#    $userid = $user->uid;
-#        
-#  $year = $form_state['values']['date']['year'];
-#  $month = $form_state['values']['date']['month'];
-#  $day = $form_state['values']['date']['day'];
-#  $date = $year. "-" . $month . "-" . $day . " 00:00:00";
-#  $date_timestamp = strtotime($day . "-" . $month . "-" . $year);
-#  //$date = date("Y-m-d", $timestamp);
-#  //dsm("Fecha introducida: " . $date);
-#  //$larga = format_date($date_timestamp, 'large');
-#  //dsm("Fecha larga: " . $larga);
-#  
-#  $query = "INSERT into {resourcereservation_round} ( uid, date, date_timestamp ) values ( %d, '%s', %d ) ";
-#  $queryResult = db_query ( $query, $userid, $date, $date_timestamp );
-#  $last_round_id = db_last_insert_id('resourcereservation_round', 'nid');
-#  
-#  /* Este if en un workaround para evitar que por el almacenamiento del error de la query en la tabla watchdog
-#     confunda la posterior llamada a db_affected_rows (rows afectadas en la ultima query) */
-#  if ($queryResult) {
-#    // $number_affected_rows =  db_affected_rows();
-#    //$last_round_id = db_last_insert_id('resourcereservation_round', 'nid');
-#    $query = "INSERT into {resourcereservation_resource} ( nid, timeinterval ) values ( %d, '%s' ) ";
-#    $interval = array( '9:00 - 9:20',   
-#                       '9:30 - 9:50',
-#                       '10:00 - 10:20', 
-#                       '10:30 - 10:50',
-#                       '11:00 - 11:20',
-#                       '11:30 - 11:50',
-#                       '12:00 - 12:20', 
-#                       '12:30 - 12:50',
-#                       '13:00 - 13:20', 
-#                       '13:30 - 13:50',
-#                       '14:00 - 14:20', 
-#                       '14:30 - 14:50',
-#                       '15:00 - 15:20', 
-#                       '15:30 - 15:50');
-#    $i=0;
-#    while ($i < sizeof($interval)) {
-#      $queryResult = db_query ( $query, $last_round_id, $interval[$i] );
-#      $i++;
-#    }
-#    drupal_set_message ( t ( "Danke. Der Tag wurde richtig erstellt: " . $date . '.' ) );
-#  }
-#  else {
-#    form_set_error ( $form, t( "An error has happened. Your Reservation Round has not been sent." ) );
-#  }
-#}
-#
-#
-#/* --------------------- VIEW ROUND --------------------------- */
-#
-#function resourcereservation_view_reservation_round ( $roundid=null )
-#{ 
-#  $query = "SELECT rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  $resource = db_fetch_object ( $queryResult );
-#  
-#  $humanDate = format_date($resource->date_timestamp, $type = 'custom', $format = 'd.m.Y');
-#  
-#  $content = '<p><h2>Tag: ' . $humanDate . '</h2></p>';
-#  
-#  $header = array
-#  (
-#    array('data' => t('Uhrzeit'), 'field' => 'timeinterval'),
-#    array('data' => t('Status'), 'field' => 'status'),
-#  );
-#  
-#  $query = "SELECT rr.timeinterval, rr.resource_id, rr.status, rr.name, rr.email, rr.phone_extension FROM {resourcereservation_resource} rr WHERE rr.nid=%d ORDER BY rr.resource_id";
-#  $queryResult = db_query ( $query, $roundid );
-#  
-#  $rows = array ();
-#  while ( $resource = db_fetch_object ( $queryResult ) )
-#  {
-#    $row = array ();
-#    $row['timeinterval'] = $resource->timeinterval;
-#    $row['status'] = resourcereservation_status_tr($resource->status, $resource->resource_id, 
-#                                                   $resource->name, $resource->email, $resource->phone_extension);
-#    if  ($resource->status == 1) {                                          
-#      $row['delete'] = l ( t('delete'), "resourcereservation/delete-reservation/" . $resource->resource_id );
-#    }
-#    
-#    $rows[] = $row;
-#  }
-# 
-#  $content .= theme_table($header, $rows);
-# 
-#  return $content;
-#}
-#
-#function resourcereservation_status_tr ( $status, $resource_id, $name, $email, $phone_extension )
-#{
-#  if ($status == 1) {
-#    $result = 'GEBUCHT'; //<br/>Name: ' . $name . '<br/>E-Mail Adresse: ' . $email . '<br/>Durchwahl: ' . $phone_extension ;
-#    global $user;
-#    //dsm($user);
-#    if (($user->uid == '1') ||  (in_array('marketing', array_values($user->roles))) ||  (in_array('Massage admin', array_values($user->roles)))) {
-#      $result .= '<br/>Name: ' . $name . '<br/>E-Mail Adresse: ' . $email . '<br/>Durchwahl: ' . $phone_extension ;
-#    }
-#  }
-#  else {
-#    $result = 'Frei - ' . l( t('Jetzt buchen'), "resourcereservation/make-reservation/" . $resource_id);
-#  }
-#  return $result;
-#}
-#
-#/* --------------------- DELETE ROUND --------------------------- */
-#
-#function resourcereservation_delete_reservation_round ( $roundid=null )
-#{
-#  $content = '';
-#  $content .= drupal_get_form ( 'resourcereservation_delete_reservation_round_form', $roundid );
-# 
-#  return $content;
-#}
-# 
-#function resourcereservation_delete_reservation_round_form ( $form, $roundid )
-#{
-#
-#  $query = "SELECT rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  $message = db_fetch_object ( $queryResult );
-#  
-#  $humanDate = format_date($message->date_timestamp, $type = 'custom', $format = 'd.m.Y');
-# 
-#  $form = array
-#    (
-#      'delete_reservation_round' => array
-#      (
-#        '#type' => 'fieldset',
-#        '#title' => t( 'Datum <b>' . $humanDate . '</b>' ),
-#        'roundid' => array ( '#type' => 'hidden', "#default_value" => $roundid ),
-#        'submit' => array ( '#type' => 'submit',  '#value' => t('Loeschen'),  ),
-#      ),
-#    );
-#    return $form;
-#    
-#}
-# 
-#function resourcereservation_delete_reservation_round_form_submit ( $form, &$form_state )
-#{
-#
-#  $roundid = $form_state['values']['roundid'];
-#  
-#  $query = "DELETE FROM {resourcereservation_resource} where nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  
-#  $query = "DELETE FROM {resourcereservation_round} where nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-# 
-#  if(db_affected_rows()){
-#    drupal_set_message ( t ( "Termin geloescht" ) );
-#  }
-# 
-#  drupal_goto ('/resourcereservation');
-#  
-#}
-#
-#/* --------------------- ACTIVATE ROUND --------------------------- */
-#
-#function resourcereservation_activate_reservation_round ( $roundid=null )
-#{
-#  $content = '';
-#  $content .= drupal_get_form ( 'resourcereservation_activate_reservation_round_form', $roundid );
-# 
-#  return $content;
-#}
-# 
-#function resourcereservation_activate_reservation_round_form ( $form, $roundid )
-#{
-#
-#  $query = "SELECT rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  $message = db_fetch_object ( $queryResult );
-#  
-#  $humanDate = format_date($message->date_timestamp, $type = 'custom', $format = 'd.m.Y');
-# 
-#  $form = array
-#    (
-#      'activate_reservation_round' => array
-#      (
-#        '#type' => 'fieldset',
-#        '#title' => t( 'Datum <b>' . $humanDate . '</b>' ),
-#        'roundid' => array ( '#type' => 'hidden', "#default_value" => $roundid ),
-#        'submit' => array ( '#type' => 'submit',  '#value' => t('Aktivieren'),  ),
-#      ),
-#    );
-#    return $form;
-#    
-#}
-# 
-#function resourcereservation_activate_reservation_round_form_submit ( $form, &$form_state )
-#{
-#
-#  $roundid = $form_state['values']['roundid'];
-#  
-#  $query = "UPDATE resourcereservation_round SET active='1' WHERE nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  
-#  if(db_affected_rows()){
-#    drupal_set_message ( t ( "Datum aktiviert" ) );
-#  }
-# 
-#  drupal_goto ('/resourcereservation');
-#  
-#}
-#
-#
-#/* --------------------- DEACTIVATE ROUND --------------------------- */
-#
-#function resourcereservation_deactivate_reservation_round ( $roundid=null )
-#{
-#  $content = '';
-#  $content .= drupal_get_form ( 'resourcereservation_deactivate_reservation_round_form', $roundid );
-# 
-#  return $content;
-#}
-# 
-#function resourcereservation_deactivate_reservation_round_form ( $form, $roundid )
-#{
-#
-#  $query = "SELECT rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  $message = db_fetch_object ( $queryResult );
-#  
-#  $humanDate = format_date($message->date_timestamp, $type = 'custom', $format = 'd.m.Y');
-# 
-#  $form = array
-#    (
-#      'deactivate_reservation_round' => array
-#      (
-#        '#type' => 'fieldset',
-#        '#title' => t( 'Datum <b>' . $humanDate . '</b>' ),
-#        'roundid' => array ( '#type' => 'hidden', "#default_value" => $roundid ),
-#        'submit' => array ( '#type' => 'submit',  '#value' => t('Deaktivieren'),  ),
-#      ),
-#    );
-#    return $form;
-#    
-#}
-# 
-#function resourcereservation_deactivate_reservation_round_form_submit ( $form, &$form_state )
-#{
-#
-#  $roundid = $form_state['values']['roundid'];
-#  
-#  $query = "UPDATE resourcereservation_round SET active='0' WHERE nid=%d";
-#  $queryResult = db_query ( $query, $roundid );
-#  
-#  if(db_affected_rows()){
-#    drupal_set_message ( t ( "Datum deaktiviert" ) );
-#  }
-# 
-#  drupal_goto ('/resourcereservation');
-#  
-#}
-#
-#/* --------------------- MAKE A RESERVATION --------------------------- */
-#
-#function resourcereservation_make_reservation ( $resource_id = null )
-#{
-#  $content .= drupal_get_form ( 'resourcereservation_make_reservation_form', $resource_id );
-# 
-#  return $content;
-#}
-#
-#function resourcereservation_make_reservation_form ( $form, $resource_id )
-#{
-#  $query = "SELECT rr.nid, rr.timeinterval FROM {resourcereservation_resource} rr WHERE rr.resource_id=%d";
-#  $queryResult = db_query ( $query, $resource_id );
-#  $resource = db_fetch_object ( $queryResult );
-#  
-#  $query2 = "SELECT rr.date, rr.nid, rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-#  $queryResult2 = db_query ( $query2, $resource->nid );
-#  $round = db_fetch_object ( $queryResult2 );
-#
-#  $humanDate = format_date($round->date_timestamp, $type = 'custom', $format = 'd.m.Y');
-# 
-#  $form = array
-#    (
-#      'make_reservation' => array
-#      (
-#        '#type' => 'fieldset',
-#        '#title' => t( 'Jetzt Termin buchen, der <b>' . $humanDate . '</b> in die Uhrzeit <b>' . $resource->timeinterval . '</b>' ),
-#        'name' => array ( '#type' => 'textfield', "#description" => "Name" ),
-#        'email' => array ( '#type' => 'textfield', "#description" => "Bally-Wulff E-Mail Adresse" ),
-#        'phone_extension' => array ( '#type' => 'textfield', "#maxlength" => 3, "#description" => "Durchwahl" ),
-#        'resourceid' => array ( '#type' => 'hidden', "#default_value" => $resource_id ),
-#        'roundid' => array ( '#type' => 'hidden', "#default_value" => $round->nid ),
-#        'submit' => array ( '#type' => 'submit',  '#value' => t('Speichern'),  ),
-#      ),
-#    );
-#    
-#    return $form;
-#}
-# 
-#function resourcereservation_make_reservation_form_submit ( $form, &$form_state )
-#{
-#  $resourceid = $form_state['values']['resourceid'];
-#  $roundid = $form_state['values']['roundid'];
-#  $name = $form_state['values']['name'];
-#  $email = $form_state['values']['email'];
-#  $phone_extension = $form_state['values']['phone_extension'];
-#  $delete_key = md5(uniqid());
-#  
-#  if (valid_email_address ($email)) {
-#  
-#    $query = "UPDATE resourcereservation_resource SET resourcereservation_resource.name = '%s', resourcereservation_resource.email = '%s',
-#                                                    resourcereservation_resource.phone_extension = %d, resourcereservation_resource.status = 1, resourcereservation_resource.delete_key = '%s' 
-#                                                    WHERE resourcereservation_resource.resource_id=%d";
-#    $queryResult = db_query ( $query, $name, $email, $phone_extension, $delete_key, $resourceid );
-# 
-#    if(db_affected_rows()){
-#
-#      $query2 = "SELECT rr.timeinterval FROM {resourcereservation_resource} rr WHERE rr.resource_id=%d";
-#      $queryResult2 = db_query ( $query2, $resourceid );
-#      $result2 = db_fetch_object ( $queryResult2 );
-#
-#      $query3 = "SELECT rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-#      $queryResult3 = db_query ( $query3, $roundid );
-#      $result3 = db_fetch_object ( $queryResult3 );
-#      $humanDate = format_date($result3->date_timestamp, $type = 'custom', $format = 'd.m.Y');
-#      
-#      drupal_set_message ( t ( "Termin gebucht" ) );
-#      
-#      // set up the to and from
-#      // $to = "recepient@host.com"
-#      // multiple recipients:
-#      // The formatting of this string must comply with RFC 2822
-#      // $to = "recip@host.com, anotherrecip@host.com, again@agin.com";
-#      // this has to be from your server, or you could get blocked by spam blocker
-#      $email_from = "marketing@bally-wulff.de";
-# 
-#      //build an array called $params to pass whatever you want to the email
-#      $params['name'] = $name;
-#      $params['email'] = $email;
-#      $params['phone_extension'] = $phone_extension;
-#      $params['delete_key'] = $delete_key;
-#      $params['date'] = $humanDate;
-#      $params['timeinterval'] = $result2->timeinterval;
-# 
-#      $sent = drupal_mail('ConfReserv', 'key', $email, language_default(), $params, $email_from, TRUE);
-#    }
-#  
-#    drupal_goto ('resourcereservation/view-reservation-round/' . $roundid );
-#  }
-#  else {
-#    drupal_set_message ( t ( '<b>' . $email . "</b> ist kein richtige E-Mail Adresse" )  , 'error' );
-#  }
-#}
-#
-#/*
-# *	drupal mail looks for a function that matches the first parameter _ mail to build the message
-# */		
-#function ConfReserv_mail($key, &$message, $params) {
-#  $language = $message['language'];
-#  switch($key) {
-#    //switching on $key lets you create variations of the email based on the $key parameter
-#    case 'key':
-#      $message['subject'] = t('Massage Termin', $vars, $language->language); //$vars required even if not used to get $language in there
-#      //the email body is here, inside the $message array
-#      $message['body'][] = 'Sie haben einen Massage Termin gebucht.
-#      Name: ' . $params['name'] . '
-#      E-Mail Adresse: ' . $params['email'] . '
-#      Durchwahl: ' . $params['phone_extension'] . '
-#      Datum: ' . $params['date'] . '
-#      Uhrzeit: ' . $params['timeinterval'] . '
-#      Loeschen Key: ' . $params['delete_key'];
-#      
-#      break;
-#  }
-#}
-#
-#/* --------------------- DELETE RESERVATION --------------------------- */
-#
-#function resourcereservation_delete_reservation ( $resourceid=null )
-#{
-#  $content = '';
-#  $content .= drupal_get_form ( 'resourcereservation_delete_reservation_form', $resourceid );
-# 
-#  return $content;
-#}
-# 
-#function resourcereservation_delete_reservation_form ( $form, $resourceid )
-#{
-#
-#  $query = "SELECT rr.timeinterval FROM {resourcereservation_resource} rr WHERE rr.resource_id=%d";
-#  $queryResult = db_query ( $query, $resourceid );
-#  $message = db_fetch_object ( $queryResult );
-# 
-#  $form = array
-#    (
-#      'delete_reservation' => array
-#      (
-#        '#type' => 'fieldset',
-#        '#title' => t( 'Massage Termin von <b>' . $message->timeinterval . '</b>' ),
-#        'resourceid' => array ( '#type' => 'hidden', "#default_value" => $resourceid ),
-#        'delete_key' => array ( '#type' => 'textfield', "#description" => "Loeschen Key" ),
-#        'submit' => array ( '#type' => 'submit',  '#value' => t('Loeschen'),  ),
-#      ),
-#    );
-#    return $form;
-#    
-#}
-# 
-#function resourcereservation_delete_reservation_form_submit ( $form, &$form_state )
-#{
-#
-#  $resourceid = $form_state['values']['resourceid'];
-#  $delete_key = $form_state['values']['delete_key'];
-#  
-#  $query2 = "SELECT rr.nid, rr.delete_key FROM {resourcereservation_resource} rr WHERE resource_id=%d";
-#  $queryResult2 = db_query ( $query2, $resourceid );
-#  $message = db_fetch_object ( $queryResult2 );
-#  
-#  if ($delete_key == $message->delete_key) {
-#    $query = "UPDATE resourcereservation_resource SET status='0' WHERE resource_id=%d";
-#    $queryResult = db_query ( $query, $resourceid );
-#  
-#    if(db_affected_rows()) {
-#      drupal_set_message ( t ( "Termin geloescht" ) );
-#    }
-#  }
-#  else {
-#    drupal_set_message ( t ( "Loeschen Key nicht richtig" ), 'error'); 
-#  }
-#  
-#  drupal_goto ('resourcereservation/view-reservation-round/' . $message->nid);
-#  
-#}
-#
-#/**
-#* Implementation of hook_block().
-#*/
-#function resourcereservation_block ( $op = 'list', $delta = 0, $edit = array() )
-#{
-#  if ( $op == "list")
-#  {
-#      $blocks = array();
-#      $blocks[0]["info"] = t('Massage Termine Block fuer Benutzer');
-#      return $blocks;
-#  }
-#  else if ( $op == "view" )
-#  {
-#      $content = '';
-#      $block = array();
-#      switch ( $delta )
-#      {
-#        case 0:
-#          $block['subject'] = t('Massage-Termine');
-#
-#          $content = '';
-#          $header = array();
-#  
-#          $query = "SELECT rr.date, rr.nid, rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.active=1 ORDER BY rr.date_timestamp";
-#          $query .= tablesort_sql ( $header );
-#          $queryResult =  db_query ( $query );
-#  
-#          $rows = array ();
-#          while ( $message = db_fetch_object ( $queryResult ) )
-#          {
-#            $row = array ();
-#            $row['date timestamp'] = format_date($message->date_timestamp, 'custom', 'l, d.m.Y');
-#            $row['view'] = l ( t('view'), "resourcereservation/view-reservation-round/" . $message->nid );
-#            $rows[] = $row;
-#          }
-# 
-#         $content .= theme_table($header, $rows);
-#  
-#          break;
-#      }
-#      $block['content'] = $content;
-#      return $block;
-#  }
-#}
+function finanzen_insert ( $project_id, $date )
+{
+  $content .= drupal_get_form ( 'finanzen_insert_form', $project_id, $date  );
+ 
+  return $content;
+}
+
+function finanzen_insert_form ( $form, $project_id, $date )
+{
+/*
+  $query = "SELECT rr.nid, rr.timeinterval FROM {resourcereservation_resource} rr WHERE rr.resource_id=%d";
+  $queryResult = db_query ( $query, $resource_id );
+  $resource = db_fetch_object ( $queryResult );
+  
+  $query2 = "SELECT rr.date, rr.nid, rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
+  $queryResult2 = db_query ( $query2, $resource->nid );
+  $round = db_fetch_object ( $queryResult2 );
+
+  $humanDate = format_date($round->date_timestamp, $type = 'custom', $format = 'd.m.Y');
+ */
+  $form = array
+    (
+      'make_reservation' => array
+      (
+        '#type' => 'fieldset',
+        //'#title' => t( 'Jetzt Termin buchen, der <b>' . /*$humanDate .*/ '</b> in die Uhrzeit <b>' . $resource->timeinterval . '</b>' ),
+        'name' => array ( '#type' => 'textfield', "#description" => "Name" ),
+        'email' => array ( '#type' => 'textfield', "#description" => "Bally-Wulff E-Mail Adresse" ),
+        'phone_extension' => array ( '#type' => 'textfield', "#maxlength" => 3, "#description" => "Durchwahl" ),
+        //'resourceid' => array ( '#type' => 'hidden', "#default_value" => $resource_id ),
+        //'roundid' => array ( '#type' => 'hidden', "#default_value" => $round->nid ),
+        'submit' => array ( '#type' => 'submit',  '#value' => t('Speichern'),  ),
+      ),
+    );
+    
+    return $form;
+}
+
