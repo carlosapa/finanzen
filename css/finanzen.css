@@ -1,0 +1,7 @@
+.insert-time-hours-field label {
+  display: inline;
+}
+
+.insert-time-hours-field input {
+  width: 30px !important;
+}
