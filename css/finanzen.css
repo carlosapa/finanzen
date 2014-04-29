@@ -1,7 +1,24 @@
-.insert-time-hours-field label {
-  display: inline;
+
+.insert-time-hours-field label,
+.insert-time-minutes-field label {
+  display: inline !important;
 }
 
-.insert-time-hours-field input {
-  width: 30px !important;
+.insert-time-hours-field,
+.insert-time-minutes-field {
+  float: left;
+  margin-right: 5px;
 }
+
+.insert-time-minutes-field {
+  margin-right: 25px;
+}
+
+.insert-time-hours-field input,
+.insert-time-minutes-field input {
+  width: 40px !important;
+}
+
+#finanzen-insert-form .form-submit { margin-top: 5px; }
+
+.inserted-time { color: #FF0000; }

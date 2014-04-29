@@ -19,19 +19,20 @@ function finanzen_schema() {
         'default' => 0
       ),   
       'date' => array (
-        'type' => 'datetime',
-        'not null' => TRUE,
-      ), 
-      'hours' => array (
+        'description' => 'The Unix timestamp when the node was created.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0
+      ), 
+      'hours' => array (
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0
       ),
-      'project' => array (
+      'project_id' => array (
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => 1
       ),  
     ),
     'primary key' => array('nid'),
