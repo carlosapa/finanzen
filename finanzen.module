@@ -44,7 +44,7 @@ function finanzen_menu() {
 
   $items = array();
 
-  $items['finanzen'] = array(
+  $items['finanzen'] = array (
     'title' => t('Finanzen'),
     'description' => 'The module information page',
     'page callback' => 'finanzen_mainpage',
@@ -52,13 +52,23 @@ function finanzen_menu() {
     'type' => MENU_CALLBACK,
   );
   
-  $items['finanzen/insert/%/%/%'] = array(
+  /* Insert(project_id, date, user_id) */
+  $items['finanzen/insert/%/%/%'] = array (
    'title' => t('Add hours to Project'),
    'page callback' => 'finanzen_insert',
    'page arguments' => array ( 2, 3, 4 ),
    'access arguments' => array('add hours to projects'),
    'type' => MENU_CALLBACK,
   );
+  
+  /* Update(id) */
+  $items['finanzen/update/%'] = array (
+   'title' => t('Add hours to Project'),
+   'page callback' => 'finanzen_update',
+   'page arguments' => array ( 2 ),
+   'access arguments' => array('add hours to projects'),
+   'type' => MENU_CALLBACK,
+  );  
 
   return $items;
 }
@@ -93,13 +103,13 @@ function finanzen_mainpage() {
   
   $number_days = _finanzen_days_in_month($month, $year);
 
-  $all_groups = $user->og_groups;
+  $all_projects = $user->og_groups;
   
   $array_header = array('date' => t("Date"));
   
-  foreach ($all_groups as $group) {
-    $group_node = node_load ($group[nid]);
-    $array_header[] = $group_node->field_project_code[0]["value"];
+  foreach ($all_projects as $project) {
+    $project_node = node_load ($project[nid]);
+    $array_header[] = $project_node->field_project_code[0]["value"];
   }
   
   $rows = array ();
@@ -108,18 +118,18 @@ function finanzen_mainpage() {
     $day = mktime(0,0,0,$month, $i, $year);
     $row = array ();
     $row['date'] = date('l, d.m.Y', $day);
-    foreach ($all_groups as $group) {
-      $link = "finanzen/insert/" . $group[nid] . "/" . $day . "/" . $user->uid;
-      $query = "SELECT fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
+    foreach ($all_projects as $project) {
+      $link = "finanzen/insert/" . $project[nid] . "/" . $day . "/" . $user->uid ;
+      $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
                 WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d" ;
-      $queryResult = db_query ( $query, $day, $user->uid, $group[nid] );
+      $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
       $resource = db_fetch_object ( $queryResult );
       if ($resource) {
-        $row[$group[title]] = '<span class="inserted-time">' . round($resource->hours, 2) . " hours</span> " 
-                              . l ( t('Modify'), $link ) ;
+        $link = "finanzen/update/" . $resource->nid ;
+        $row[$project[title]] = '<span class="inserted-time">' . round($resource->hours, 2) . " hours</span> " . l ( t('Modify'), $link ) ;
       } 
       else {
-        $row[$group[title]] = "0" . " hours " . l ( t('Insert'), $link ) ;
+        $row[$project[title]] = "0" . " hours " . l ( t('Insert'), $link ) ;
       }
     }
 
@@ -131,29 +141,16 @@ function finanzen_mainpage() {
   return $content;
 }
 
-/* --------------------- INSETR TIME - PROJECT --------------------------- */
+/* --------------------- INSERT TIME - PROJECT --------------------------- */
 
 function finanzen_insert ( $project_id, $date, $user_id )
 {
   $content .= drupal_get_form ( 'finanzen_insert_form', $project_id, $date, $user_id  );
- 
   return $content;
 }
 
 function finanzen_insert_form ( $form, $project_id, $date, $user_id )
 {
-/*
-  $query = "SELECT rr.nid, rr.timeinterval FROM {resourcereservation_resource} rr WHERE rr.resource_id=%d";
-  $queryResult = db_query ( $query, $resource_id );
-  $resource = db_fetch_object ( $queryResult );
-  
-  $query2 = "SELECT rr.date, rr.nid, rr.date_timestamp FROM {resourcereservation_round} rr WHERE rr.nid=%d";
-  $queryResult2 = db_query ( $query2, $resource->nid );
-  $round = db_fetch_object ( $queryResult2 );
-
-  $humanDate = format_date($round->date_timestamp, $type = 'custom', $format = 'd.m.Y');
- */
- 
   $human_date = date('l, d.m.Y', $date);
   $project_node = node_load ($project_id);
   $project_code = $project_node->field_project_code[0]["value"];
@@ -162,7 +159,7 @@ function finanzen_insert_form ( $form, $project_id, $date, $user_id )
     'insert_time' => array (
       '#type' => 'fieldset',
       '#title' => t( 'How many hours did you work in the project <b>' . $project_code . '</b> on <b>' . $human_date . '</b> ?' ),
-      'hours' => array ( '#type' => 'textfield', 
+      'hours' => array ( '#type' => 'textfield',
                          '#title' => 'Hours',
                          '#default_value' => '8',
                          '#maxlength' => 2,
@@ -202,39 +199,67 @@ function finanzen_insert_form_submit ( $form, &$form_state )
             values ( %d, '%s', %f, %d )";
   $queryResult = db_query ( $query, $user_id, $date, $hours_total, $project_id );
 
-#  $last_round_id = db_last_insert_id('resourcereservation_round', 'nid');
-#  
-#  /* Este if en un workaround para evitar que por el almacenamiento del error de la query en la tabla watchdog
-#     confunda la posterior llamada a db_affected_rows (rows afectadas en la ultima query) */
-#  if ($queryResult) {
-#    // $number_affected_rows =  db_affected_rows();
-#    //$last_round_id = db_last_insert_id('resourcereservation_round', 'nid');
-#    $query = "INSERT into {resourcereservation_resource} ( nid, timeinterval ) values ( %d, '%s' ) ";
-#    $interval = array( '9:00 - 9:20',   
-#                       '9:30 - 9:50',
-#                       '10:00 - 10:20', 
-#                       '10:30 - 10:50',
-#                       '11:00 - 11:20',
-#                       '11:30 - 11:50',
-#                       '12:00 - 12:20', 
-#                       '12:30 - 12:50',
-#                       '13:00 - 13:20', 
-#                       '13:30 - 13:50',
-#                       '14:00 - 14:20', 
-#                       '14:30 - 14:50',
-#                       '15:00 - 15:20', 
-#                       '15:30 - 15:50');
-#    $i=0;
-#    while ($i < sizeof($interval)) {
-#      $queryResult = db_query ( $query, $last_round_id, $interval[$i] );
-#      $i++;
-#    }
-#    drupal_set_message ( t ( "Danke. Der Tag wurde richtig erstellt: " . $date . '.' ) );
-#  }
-#  else {
-
-#  }
-
   $form_state['redirect'] = 'finanzen';
 }
 
+/* --------------------- UPDATE TIME - PROJECT --------------------------- */
+
+function finanzen_update ( $id )
+{
+  $content .= drupal_get_form ( 'finanzen_update_form', $id );
+  return $content;
+}
+
+function finanzen_update_form ( $form, $id )
+{ 
+  $query = "SELECT * FROM {finanzen_user_hours_projects} fuhp WHERE fuhp.nid=%d";
+  $queryResult = db_query ( $query, $id );
+  $resource = db_fetch_object ( $queryResult );
+  
+  $human_date = date('l, d.m.Y', $resource->date);
+  $project_node = node_load ($resource->project_id);
+  $project_code = $project_node->field_project_code[0]["value"];
+  $hours = intval($resource->hours);
+  $minutes = round(($resource->hours - $hours) * 60, 0);
+ 
+  $form = array (
+    'update_time' => array (
+      '#type' => 'fieldset',
+      '#title' => t( 'How many hours did you work in the project <b>' . $project_code . '</b> on <b>' . $human_date . '</b> ?' ),
+      'hours' => array ( '#type' => 'textfield',
+                         '#title' => 'Hours',
+                         '#default_value' => $hours,
+                         '#maxlength' => 2,
+                         '#required' => TRUE,
+                         '#prefix' => '<div class="insert-time-hours-field">',
+                         '#suffix' => '</div>',
+                       ),
+      'minutes' => array ( '#type' => 'textfield',
+                           '#title' => 'minutes',
+                           '#default_value' => $minutes,
+                           '#maxlength' => 2,
+                           '#required' => TRUE,
+                           '#prefix' => '<div class="insert-time-minutes-field">',
+                           '#suffix' => '</div>',
+                         ),
+      'id' => array ( '#type' => 'hidden', "#default_value" => $id ),
+      'submit' => array ( '#type' => 'submit',  '#value' => t('Save'), ),
+    ),
+  );
+
+  return $form;
+}
+
+function finanzen_update_form_submit ( $form, &$form_state )
+{
+  $id = $form_state['values']['id'];
+  $hours = $form_state['values']['hours'];
+  $minutes = $form_state['values']['minutes'];
+  $hours_total = $hours + ((1/60) * $minutes);
+  
+  $query = "UPDATE finanzen_user_hours_projects SET hours='" . $hours_total . "' 
+            WHERE nid='" . $id . "'";
+  $queryResult = db_query ( $query );
+
+  $form_state['redirect'] = 'finanzen';
+}
