@@ -44,7 +44,7 @@ function finanzen_menu() {
 
   $items = array();
 
-  $items['finanzen'] = array (
+  $items['timesheet'] = array (
     'title' => t('List of User timesheet per Month'),
     'description' => 'The module information page',
     'page callback' => 'finanzen_mainpage',
@@ -52,16 +52,17 @@ function finanzen_menu() {
     'type' => MENU_CALLBACK,
   );
   
-  $items['finanzen/timesheet'] = array (
+  $items['timesheet/month/%'] = array (
     'title' => t('Finanzen timesheet'),
     'description' => 'Timesheet',
-    'page callback' => 'finanzen_timesheet',
+    'page callback' => 'finanzen_timesheet_month',
+    'page arguments' => array ( 2 ),
     'access arguments' => array('add hours to projects'),
     'type' => MENU_CALLBACK,
   );
   
   /* Insert(project_id, date, user_id) */
-  $items['finanzen/insert/%/%/%'] = array (
+  $items['timesheet/insert/%/%/%'] = array (
    'title' => t('Add hours to Project'),
    'page callback' => 'finanzen_insert',
    'page arguments' => array ( 2, 3, 4 ),
@@ -70,7 +71,7 @@ function finanzen_menu() {
   );
   
   /* Update(id) */
-  $items['finanzen/update/%'] = array (
+  $items['timesheet/update/%'] = array (
    'title' => t('Add hours to Project'),
    'page callback' => 'finanzen_update',
    'page arguments' => array ( 2 ),
@@ -86,15 +87,52 @@ function finanzen_menu() {
  */
 function _finanzen_get_next_month(&$month, &$year)
 { 
-  if ($month == 12)
-    $year++;
-  else
-    $month++;
+  if ($month == 12) { $year++; $month=1; } else { $month++; }
+}
+
+/**
+ * This function calculates previous month in the calendar 
+ */
+function _finanzen_get_previous_month(&$month, &$year)
+{ 
+  if ($month == 1) { $year--; $month=12; } else { $month--; }
+}
+
+/**
+ * This function calculates the first day of the current month for a given $date
+ */
+function _finanzen_first_day_month($date)
+{
+  $month = date('m', $date);
+  $year = date('Y', $date);
+  return mktime(0,0,0,$month, 1, $year);
 } 
 
 
 /**
- * This function calculates how many days has a given month 
+ * This function calculates next months first day in unix timestamp
+ */
+function _finanzen_get_first_day_next_month($first_day_month)
+{
+  $month = date('m', $first_day_month);
+  $year = date('Y', $first_day_month);
+  _finanzen_get_next_month($month, $year);
+  return mktime(0,0,0,$month, 1, $year);
+} 
+
+/**
+ * This function calculates previous months first day in unix timestamp
+ */
+function _finanzen_get_first_day_previous_month($first_day_month)
+{
+  $month = date('m', $first_day_month);
+  $year = date('Y', $first_day_month);
+  _finanzen_get_previous_month($month, $year);
+  return mktime(0,0,0,$month, 1, $year);
+} 
+
+/**
+ * This function calculates how many days has a given month
  */
 function _finanzen_days_in_month($month, $year)
 { 
@@ -103,49 +141,67 @@ function _finanzen_days_in_month($month, $year)
 } 
 
 /**
- * The default page for /finanzen url, now showing some basic
- * information.
+ * The default page for /timesheet url, now showing some basic information
  */
 function finanzen_mainpage() {
 
-  //$content .= "<p>Main Page Finanzen</p>";
-
-  global $user;
-  
   $current_date = time ();
   
-  $month = date('m', $user->created);
-  $year = date('Y', $user->created);
-  $first_day_month = mktime(0,0,0,$month, 1, $year);
+  global $user;
+  $first_day_month = _finanzen_first_day_month($user->created);
   
   while ($first_day_month < $current_date) {
-      $link = "finanzen/timesheet/" . $first_day_month ;
-	  $content .= '<p>' . l ( date('F Y', $first_day_month), $link ) . '</p>';
-	  _finanzen_get_next_month($month, $year);
-	  $first_day_month = mktime(0,0,0,$month, 1,$year);
+      $link = "timesheet/month/" . $first_day_month ;
+	  $content = '<p>' . l ( date('F Y', $first_day_month), $link ) . '</p>' . $content;
+	  $first_day_month = _finanzen_get_first_day_next_month($first_day_month);
   }
-      
+  
   return $content;
 }
 
+
 /**
- * The default page for /finanzen url, now showing some basic
- * information.
+ * This function outputs a month navigator
  */
-function finanzen_timesheet() {
+function _finanzen_month_navigator($first_day_month)
+{ 
+  $content = "<p>";
+  $content .= '<a href="/timesheet">List months</a>';
+  
+  $current_date = time ();
+  $current_first_day_month = _finanzen_first_day_month($current_date);
+  
+  global $user;
+  $user_first_day_month = _finanzen_first_day_month($user->created);
+  
+  if ($first_day_month > $user_first_day_month) {
+  	  $content .= " | ";
+	  $content .= '<a href="/timesheet/month/' . _finanzen_get_first_day_previous_month($first_day_month) . '">Previous month</a>';
+  }
+  
+  if ($first_day_month < $current_first_day_month) {
+      $content .= " | ";
+	  $content .= '<a href="/timesheet/month/' . _finanzen_get_first_day_next_month($first_day_month) . '">Next month</a>';
+  }
+    
+   $content .= "</p>";
+   
+   return $content;     
+} 
+
+/**
+ * Users Timesheet for the given month -> $first_day_month
+ */
+function finanzen_timesheet_month( $first_day_month ) {
 
   global $user;                    
   
-  //This gets today's date
-  $date = time () ;
-  //This puts the day, month, and year in seperate variables
-  //$day = date('d', $date) ;
-  $month = date('m', $date) ;
-  $year = date('Y', $date) ;
-  //Here we generate the first day of the month
-  $first_day = mktime(0,0,0,$month, 1, $year) ;
+  $month = date('m', $first_day_month);
+  $year = date('Y', $first_day_month);
   
-  $content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day) . "</p>";
+  $content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day_month) . "</p>";
+  
+  $content .= _finanzen_month_navigator($first_day_month);
   
   $number_days = _finanzen_days_in_month($month, $year);
 
@@ -165,13 +221,13 @@ function finanzen_timesheet() {
     $row = array ();
     $row['date'] = date('l, d.m.Y', $day);
     foreach ($all_projects as $project) {
-      $link = "finanzen/insert/" . $project[nid] . "/" . $day . "/" . $user->uid ;
+      $link = "timesheet/insert/" . $project[nid] . "/" . $day . "/" . $user->uid ;
       $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
                 WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d" ;
       $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
       $resource = db_fetch_object ( $queryResult );
       if ($resource) {
-        $link = "finanzen/update/" . $resource->nid ;
+        $link = "timesheet/update/" . $resource->nid ;
         $row[$project[title]] = '<span class="inserted-time">' . round($resource->hours, 2) . " hours</span> " . l ( t('Modify'), $link ) ;
       } 
       else {
@@ -245,7 +301,7 @@ function finanzen_insert_form_submit ( $form, &$form_state )
             values ( %d, '%s', %f, %d )";
   $queryResult = db_query ( $query, $user_id, $date, $hours_total, $project_id );
 
-  $form_state['redirect'] = 'finanzen';
+  $form_state['redirect'] = 'timesheet';
 }
 
 /* --------------------- UPDATE TIME - PROJECT --------------------------- */
@@ -307,5 +363,5 @@ function finanzen_update_form_submit ( $form, &$form_state )
             WHERE nid='" . $id . "'";
   $queryResult = db_query ( $query );
 
-  $form_state['redirect'] = 'finanzen';
+  $form_state['redirect'] = 'timesheet';
 }
