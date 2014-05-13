@@ -45,9 +45,17 @@ function finanzen_menu() {
   $items = array();
 
   $items['finanzen'] = array (
-    'title' => t('Finanzen'),
+    'title' => t('List of User timesheet per Month'),
     'description' => 'The module information page',
     'page callback' => 'finanzen_mainpage',
+    'access arguments' => array('add hours to projects'),
+    'type' => MENU_CALLBACK,
+  );
+  
+  $items['finanzen/timesheet'] = array (
+    'title' => t('Finanzen timesheet'),
+    'description' => 'Timesheet',
+    'page callback' => 'finanzen_timesheet',
     'access arguments' => array('add hours to projects'),
     'type' => MENU_CALLBACK,
   );
@@ -74,9 +82,21 @@ function finanzen_menu() {
 }
 
 /**
+ * This function calculates next month in the calendar 
+ */
+function _finanzen_get_next_month(&$month, &$year)
+{ 
+  if ($month == 12)
+    $year++;
+  else
+    $month++;
+} 
+
+
+/**
  * This function calculates how many days has a given month 
  */
-function _finanzen_days_in_month($month, $year) 
+function _finanzen_days_in_month($month, $year)
 { 
   // calculate number of days in a month 
   return $month == 2 ? ($year % 4 ? 28 : ($year % 100 ? 29 : ($year % 400 ? 28 : 29))) : (($month - 1) % 7 % 2 ? 30 : 31); 
@@ -87,6 +107,32 @@ function _finanzen_days_in_month($month, $year)
  * information.
  */
 function finanzen_mainpage() {
+
+  //$content .= "<p>Main Page Finanzen</p>";
+
+  global $user;
+  
+  $current_date = time ();
+  
+  $month = date('m', $user->created);
+  $year = date('Y', $user->created);
+  $first_day_month = mktime(0,0,0,$month, 1, $year);
+  
+  while ($first_day_month < $current_date) {
+      $link = "finanzen/timesheet/" . $first_day_month ;
+	  $content .= '<p>' . l ( date('F Y', $first_day_month), $link ) . '</p>';
+	  _finanzen_get_next_month($month, $year);
+	  $first_day_month = mktime(0,0,0,$month, 1,$year);
+  }
+      
+  return $content;
+}
+
+/**
+ * The default page for /finanzen url, now showing some basic
+ * information.
+ */
+function finanzen_timesheet() {
 
   global $user;                    
   
@@ -99,7 +145,7 @@ function finanzen_mainpage() {
   //Here we generate the first day of the month
   $first_day = mktime(0,0,0,$month, 1, $year) ;
   
-  $content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day) . "</p>" ;
+  $content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day) . "</p>";
   
   $number_days = _finanzen_days_in_month($month, $year);
 
