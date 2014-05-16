@@ -78,6 +78,15 @@ function finanzen_menu() {
    'access arguments' => array('add hours to projects'),
    'type' => MENU_CALLBACK,
   );  
+  
+  /*  */
+  $items['timesheet/whole-month/%'] = array (
+   'title' => t('Modify Whole Month'),
+   'page callback' => 'finanzen_whole_month',
+   'page arguments' => array ( 2 ),
+   'access arguments' => array('add hours to projects'),
+   'type' => MENU_CALLBACK,
+  ); 
 
   return $items;
 }
@@ -203,6 +212,8 @@ function finanzen_timesheet_month( $first_day_month ) {
   
   $content .= _finanzen_month_navigator($first_day_month);
   
+  $content .= '<p><a href="/timesheet/whole-month/' . $first_day_month . '">Modify whole month</a></p>';
+  
   $number_days = _finanzen_days_in_month($month, $year);
 
   $all_projects = $user->og_groups;
@@ -231,7 +242,7 @@ function finanzen_timesheet_month( $first_day_month ) {
         $row[$project[title]] = '<span class="inserted-time">' . round($resource->hours, 2) . " hours</span> " . l ( t('Modify'), $link ) ;
       } 
       else {
-        $row[$project[title]] = "0" . " hours " . l ( t('Insert'), $link ) ;
+        $row[$project[title]] = "0 hours " . l ( t('Insert'), $link ) ;
       }
     }
 
@@ -263,15 +274,13 @@ function finanzen_insert_form ( $form, $project_id, $date, $user_id )
       '#title' => t( 'How many hours did you work in the project <b>' . $project_code . '</b> on <b>' . $human_date . '</b> ?' ),
       'hours' => array ( '#type' => 'textfield',
                          '#title' => 'Hours',
-                         '#default_value' => '8',
                          '#maxlength' => 2,
                          '#required' => TRUE,
                          '#prefix' => '<div class="insert-time-hours-field">',
                          '#suffix' => '</div>',
                        ),
       'minutes' => array ( '#type' => 'textfield',
-                           '#title' => 'minutes',
-                           '#default_value' => '0',
+                           '#title' => 'Minutes',
                            '#maxlength' => 2,
                            '#required' => TRUE,
                            '#prefix' => '<div class="insert-time-minutes-field">',
@@ -365,3 +374,104 @@ function finanzen_update_form_submit ( $form, &$form_state )
 
   $form_state['redirect'] = 'timesheet';
 }
+
+/* --------------------- Whole Month --------------------------------- */
+
+function finanzen_whole_month ( $first_day_month )
+{
+  
+  global $user;                    
+  
+  $month = date('m', $first_day_month);
+  $year = date('Y', $first_day_month);
+
+  $all_projects = $user->og_groups;
+  
+  $array_header = array('date' => t("Date"));
+  
+  foreach ($all_projects as $project) {
+    $project_node = node_load ($project[nid]);
+    $array_header[] = $project_node->field_project_code[0]["value"];
+  }
+  
+  $number_days = _finanzen_days_in_month($month, $year);
+
+  $rows = array ();
+  
+  for ($i = 1; $i <= $number_days; $i++) {
+    $day = mktime(0,0,0,$month, $i, $year);
+    $row = array ();
+    $row['date'] = date('l, d.m.Y', $day);
+    
+    foreach ($all_projects as $project) {  
+      $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
+                WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d" ;
+      $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
+      $resource = db_fetch_object ( $queryResult );
+      
+      if ($resource) {
+        $hours = intval($resource->hours);
+        $minutes = round(($resource->hours - $hours) * 60, 0);
+      } 
+      else {
+        $hours = "";
+        $minutes = "";
+      }
+      
+      $form[$day][$project[title]] = array (
+        'hours' => array ( '#type' => 'textfield',
+                           '#title' => 'Hr',
+                           '#value' => $hours,
+                           '#maxlength' => 2,
+                           '#weight' => 1,
+                           '#prefix' => '<div class="insert-time-hours-field">',
+                           '#suffix' => '</div>',
+                         ),
+        'minutes' => array ( '#type' => 'textfield',
+                             '#title' => 'Min',
+                             '#value' => $minutes,
+                             '#maxlength' => 2,
+                             '#weight' => 2,
+                             '#prefix' => '<div class="insert-time-minutes-field">',
+                             '#suffix' => '</div>',
+                           ),
+      );
+      
+      $row[$project[title]] = drupal_render($form[$day][$project[title]]);
+    }
+
+    $rows[] = $row; 
+  }
+  
+  $form = array (
+    'submit' => array (
+      '#type' => 'submit',  
+      '#value' => t('Save'), 
+    ),
+  );
+  
+  // This is where we create the table using theme()
+  $output .= theme('table', $array_header, $rows);
+  // Now we render whatever is left of the table, for instance the submit buttons
+  $output .= drupal_render($form);
+  // Magic, return your form
+  return $output;
+
+}
+
+/*
+function finanzen_table_form_form ( $form )
+{
+  
+  foreach (element_children($form) as $key) {
+    dsm($key);
+  }
+  
+  return $form;
+}
+*/
+
+
+
+
+
