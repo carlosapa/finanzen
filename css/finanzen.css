@@ -16,9 +16,16 @@
 
 .insert-time-hours-field input,
 .insert-time-minutes-field input {
-  width: 40px !important;
+  width: 30px !important;
 }
 
 #finanzen-insert-form .form-submit { margin-top: 5px; }
 
 .inserted-time { color: #FF0000; }
+
+div.modified .form-item input { background-color : #FCF6D3; }
+
+/*tr.weekend { background-color : #FFE8E8; }*/
+tr.weekend { background-color : #FFE9D2; }
+
+
