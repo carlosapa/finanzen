@@ -25,7 +25,9 @@
 
 div.modified .form-item input { background-color : #FCF6D3; }
 
-/*tr.weekend { background-color : #FFE8E8; }*/
 tr.weekend { background-color : #FFE9D2; }
+
+span.summary-project-month { margin-right: 10px; }
+div.summary-month { margin-bottom: 5px; }
 
 

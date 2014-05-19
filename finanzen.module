@@ -157,22 +157,15 @@ function _finanzen_get_first_day_previous_month($date)
 function _finanzen_is_weekend($date)
 {
   $weekday = date('N', $date);
-  if ($weekday > 5) { 
-    return TRUE; 
-    
-  } 
-  else {
-    return FALSE;  
-  }
+  if ($weekday > 5) { return TRUE; } else { return FALSE; }
 } 
-
 
 /**
  * This function calculates how many days has a given month
  */
 function _finanzen_days_in_month($month, $year)
 { 
-  // calculate number of days in a month 
+  // calculate number of days in a month
   return $month == 2 ? ($year % 4 ? 28 : ($year % 100 ? 29 : ($year % 400 ? 28 : 29))) : (($month - 1) % 7 % 2 ? 30 : 31); 
 } 
 
@@ -186,6 +179,34 @@ function _finanzen_get_project_code($project_id)
 } 
 
 /**
+ * This function prints the summary for a given user and date
+ */
+function _finanzen_summary_user_month($user_id, $date)
+{ 
+  $content = '<div class="summary-month">';
+  
+  $link = "timesheet/month/" . $date ;
+  $content .= '<p>' . l ( date('F Y', $date), $link ) . '</p>';
+
+  $query = "SELECT * FROM {finanzen_user_hours_projects} fuhp
+            WHERE fuhp.uid=%d AND fuhp.date>=%d AND fuhp.date<%d ORDER BY fuhp.project_id";
+  $queryResult = db_query ( $query, $user_id , $date, _finanzen_get_first_day_next_month($date));
+  
+  while ($assignation = db_fetch_object($queryResult)){
+    $summary[$assignation->project_id] = $summary[$assignation->project_id] + $assignation->hours;
+  }
+  
+  foreach (element_children($summary) as $project_id) {
+    $content .= '<span class="summary-project-month"><b>' . _finanzen_get_project_code($project_id) .
+                '</b>: ' . round($summary[$project_id], 2) . ' hours</span>';
+  }
+  
+  $content .= '</div>';
+
+  return $content;
+} 
+
+/**
  * The default page for /timesheet url, now showing some basic information
  */
 function finanzen_mainpage() {
@@ -196,11 +217,10 @@ function finanzen_mainpage() {
   $first_day_month = _finanzen_first_day_month($user->created);
   
   while ($first_day_month < $current_date) {
-      $link = "timesheet/month/" . $first_day_month ;
-	  $content = '<p>' . l ( date('F Y', $first_day_month), $link ) . '</p>' . $content;
-	  $first_day_month = _finanzen_get_first_day_next_month($first_day_month);
+   	$content = _finanzen_summary_user_month($user->uid, $first_day_month) . $content;	
+	$first_day_month = _finanzen_get_first_day_next_month($first_day_month);
   }
-  
+  $content = "<b>Monthly Report for " . $user->name . '</b>' . $content;
   return $content;
 }
 
@@ -265,7 +285,7 @@ function finanzen_timesheet_month( $first_day_month ) {
   for ($i = 1; $i <= $number_days; $i++) {
     $day = mktime(0,0,0,$month, $i, $year);
     $rowdata = array ();
-    $rowdata['date'] = date('l, d.m.Y', $day);
+    $rowdata['date'] = date('d.m.Y, l', $day);
         
     foreach ($all_projects as $project) {
       $link = "timesheet/insert/" . $project[nid] . "/" . $day . "/" . $user->uid ;
@@ -499,6 +519,7 @@ function finanzen_whole_month_form ( $form, $first_day_month )
                            '#default_value' => $hours,
                            '#maxlength' => 2,
                            '#weight' => 1,
+                           '#required' => TRUE,
                            '#prefix' => '<div class="insert-time-hours-field ' . $css_class . '">',
                            '#suffix' => '</div>',
                          ),
@@ -507,6 +528,7 @@ function finanzen_whole_month_form ( $form, $first_day_month )
                              '#default_value' => $minutes,
                              '#maxlength' => 2,
                              '#weight' => 2,
+                             '#required' => TRUE,
                              '#prefix' => '<div class="insert-time-minutes-field ' . $css_class . '">',
                              '#suffix' => '</div>',
                            ),
@@ -546,7 +568,7 @@ function theme_finanzen_whole_month_form_theme ( $form ) {
   
   foreach (element_children($form['projects']) as $day) {
     $rowdata = array();
-    $rowdata[] = date('l, d.m.Y', (float)$day);
+    $rowdata[] = date('d.m.Y, l', (float)$day);
     for ($j=0;$j<$i;$j++) {
 	  $rowdata[] = drupal_render($form['projects'][$day][$projects[$j]]);
     }
@@ -564,7 +586,6 @@ function theme_finanzen_whole_month_form_theme ( $form ) {
   
   $output .= drupal_render($form);
   return $output;
-
 }
 
 function finanzen_whole_month_form_validate ( $form, &$form_state ) {
@@ -573,18 +594,14 @@ function finanzen_whole_month_form_validate ( $form, &$form_state ) {
     
     foreach (element_children($form_state['values']['projects'][$date]) as $project_id) {
     
-      if (($form_state['values']['projects'][$date][$project_id]['hours'] != "") &&
-          ($form_state['values']['projects'][$date][$project_id]['minutes']!= "")) {
-    
-        if (($form_state['values']['projects'][$date][$project_id]['hours'] > 24) ||
-           !(is_numeric($form_state['values']['projects'][$date][$project_id]['hours']))) {
-          form_set_error("projects][$date][$project_id][hours", t('Hours: You must enter a numeric value between 0 and 24.'));
-        }
+      if (($form_state['values']['projects'][$date][$project_id]['hours'] > 24) ||
+         !(is_numeric($form_state['values']['projects'][$date][$project_id]['hours']))) {
+        form_set_error("projects][$date][$project_id][hours", t('Hours: You must enter a numeric value between 0 and 24.'));
+      }
       
-        if (($form_state['values']['projects'][$date][$project_id]['minutes'] > 59) ||
-           !(is_numeric($form_state['values']['projects'][$date][$project_id]['minutes']))) {
-          form_set_error("projects][$date][$project_id][minutes", t('Hours: You must enter a numeric value between 0 and 59.'));
-        }
+      if (($form_state['values']['projects'][$date][$project_id]['minutes'] > 59) ||
+         !(is_numeric($form_state['values']['projects'][$date][$project_id]['minutes']))) {
+        form_set_error("projects][$date][$project_id][minutes", t('Hours: You must enter a numeric value between 0 and 59.'));
       }
     }
   }
@@ -598,26 +615,25 @@ function finanzen_whole_month_form_submit ( $form, &$form_state )
     
     foreach (element_children($form_state['values']['projects'][$date]) as $project_id) {
         
-        $hours = $form_state['values']['projects'][$date][$project_id]['hours'];
-        $minutes = $form_state['values']['projects'][$date][$project_id]['minutes'];
-        $hours_total = $hours + ((1/60) * $minutes);
+      $hours = $form_state['values']['projects'][$date][$project_id]['hours'];
+      $minutes = $form_state['values']['projects'][$date][$project_id]['minutes'];
+      $hours_total = $hours + ((1/60) * $minutes);
         
-        $reg_id = $form_state['values']['projects'][$date][$project_id]['id'];
-        
-        if ($reg_id != 0) { // DB Register already exists
-	      $query = "UPDATE finanzen_user_hours_projects SET hours='" . $hours_total . "' 
-                    WHERE nid='" . $reg_id . "'";
-          $queryResult = db_query ( $query );   
-        } 
-        else { // DB Register does not exists
-          if (($form_state['values']['projects'][$date][$project_id]['hours'] != 0) ||
-              ($form_state['values']['projects'][$date][$project_id]['minutes']!= 0)) {
-	        $query = "INSERT into {finanzen_user_hours_projects} ( uid, date, hours, project_id )
-                    values ( %d, '%s', %f, %d )";
-            $queryResult = db_query ( $query, $user->uid, $date, $hours_total, $project_id );   
-          }
-        }
+      $reg_id = $form_state['values']['projects'][$date][$project_id]['id'];
       
+      if ($reg_id != 0) { // DB Register already exists
+	    $query = "UPDATE finanzen_user_hours_projects SET hours='" . $hours_total . "' 
+                  WHERE nid='" . $reg_id . "'";
+        $queryResult = db_query ( $query );   
+      } 
+      else { // DB Register does not exists
+        if (($form_state['values']['projects'][$date][$project_id]['hours'] != 0) ||
+            ($form_state['values']['projects'][$date][$project_id]['minutes']!= 0)) {
+	      $query = "INSERT into {finanzen_user_hours_projects} ( uid, date, hours, project_id )
+                    values ( %d, '%s', %f, %d )";
+          $queryResult = db_query ( $query, $user->uid, $date, $hours_total, $project_id );   
+        }
+      }
     }
   }
 }
