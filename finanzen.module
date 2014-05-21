@@ -43,13 +43,21 @@ function finanzen_init(){
 function finanzen_menu() {
 
   $items = array();
+  
+  $items['timesheet'] = array(
+	'title' => t('Timesheet'),
+	'menu_name' => 'features',
+    'page callback' => 'finanzen_timesheet_mainpage',
+	'access arguments' => array('add hours to projects'),
+	'type' => MENU_NORMAL_ITEM,
+  );
 
-  $items['timesheet'] = array (
-    'title' => t('List of User timesheet per Month'),
-    'description' => 'The module information page',
-    'page callback' => 'finanzen_mainpage',
-    'access arguments' => array('add hours to projects'),
-    'type' => MENU_CALLBACK,
+  $items['finanzen'] = array(
+	'title' => t('Finanzen'),
+	'menu_name' => 'features',
+	'page callback' => 'finanzen_finanzen_mainpage',
+	'access arguments' => array('administer finanzen'),
+	'type' => MENU_NORMAL_ITEM,
   );
   
   $items['timesheet/month/%'] = array (
@@ -82,7 +90,7 @@ function finanzen_menu() {
   /* Edit whole month */
   $items['timesheet/edit-month/%'] = array (
    'title' => t('Modify Whole Month'),
-   'page callback' => 'finanzen_whole_month',
+   'page callback' => 'finanzen_edit_month',
    'page arguments' => array ( 2 ),
    'access arguments' => array('add hours to projects'),
    'type' => MENU_CALLBACK,
@@ -91,12 +99,29 @@ function finanzen_menu() {
   return $items;
 }
 
+function finanzen_preprocess_page(&$vars) 
+{
+  global $user;
+
+  $space = module_exists('spaces') ? spaces_get_space() : FALSE;
+  
+  foreach ($vars['primary_links'] as $k => &$link) {
+    if (($link['title'] == 'Finanzen') && ($space->type == 'og')) {
+      unset($vars['primary_links'][$k]);
+    }
+    else if (($link['title'] == 'Timesheet') && ($space->type == 'og')) {
+    //else if (($link['title'] == 'Timesheet') && (($space->type == 'og') || (in_array("administrator", $user->roles)))) {
+      unset($vars['primary_links'][$k]);
+    }
+  }  
+}
+
 /**
  * Implements hook_theme().
  */
 function finanzen_theme() {
   return array (
-    'finanzen_whole_month_form_theme' => array(
+    'finanzen_edit_month_form_theme' => array(
       'arguments' => array('form' => NULL),
     ),
   );
@@ -126,8 +151,7 @@ function _finanzen_first_day_month($date)
   $month = date('m', $date);
   $year = date('Y', $date);
   return mktime(0,0,0,$month, 1, $year);
-} 
-
+}
 
 /**
  * This function calculates next months first day in unix timestamp
@@ -181,13 +205,8 @@ function _finanzen_get_project_code($project_id)
 /**
  * This function prints the summary for a given user and date
  */
-function _finanzen_summary_user_month($user_id, $date)
+function _finanzen_summary_user_month($user_id, $date, &$total)
 { 
-  $content = '<div class="summary-month">';
-  
-  $link = "timesheet/month/" . $date ;
-  $content .= '<p>' . l ( date('F Y', $date), $link ) . '</p>';
-
   $query = "SELECT * FROM {finanzen_user_hours_projects} fuhp
             WHERE fuhp.uid=%d AND fuhp.date>=%d AND fuhp.date<%d ORDER BY fuhp.project_id";
   $queryResult = db_query ( $query, $user_id , $date, _finanzen_get_first_day_next_month($date));
@@ -197,11 +216,36 @@ function _finanzen_summary_user_month($user_id, $date)
   }
   
   foreach (element_children($summary) as $project_id) {
+    $total = $total + $summary[$project_id];
     $content .= '<span class="summary-project-month"><b>' . _finanzen_get_project_code($project_id) .
                 '</b>: ' . round($summary[$project_id], 2) . ' hours</span>';
   }
   
-  $content .= '</div>';
+  if (empty($content)) { $content = "Empty"; }
+
+  return $content;
+}
+
+/**
+ * This function prints the summary for a given user and date
+ */
+function _finanzen_summary_project_month($project_id, $date, &$total)
+{ 
+  $query = "SELECT * FROM {finanzen_user_hours_projects} fuhp
+            WHERE fuhp.project_id=%d AND fuhp.date>=%d AND fuhp.date<%d"; // ORDER BY fuhp.project_id";
+  $queryResult = db_query ( $query, $project_id , $date, _finanzen_get_first_day_next_month($date));
+  
+  while ($assignation = db_fetch_object($queryResult)){
+    $summary[$assignation->uid] = $summary[$assignation->uid] + $assignation->hours;
+  }
+  
+  foreach (element_children($summary) as $user_id) {
+    $total = $total + $summary[$user_id];
+    $content .= '<span class="summary-project-month"><b>' . _finanzen_get_user_name($user_id) .
+                '</b>: ' . round($summary[$user_id], 2) . ' hours</span>';
+  }
+  
+  if (empty($content)) { $content = "Empty"; }
 
   return $content;
 }
@@ -209,18 +253,133 @@ function _finanzen_summary_user_month($user_id, $date)
 /**
  * The default page for /timesheet url, now showing some basic information
  */
-function finanzen_mainpage() {
+function finanzen_timesheet_mainpage() {
 
   $current_date = time ();
   
   global $user;
+  
   $first_day_month = _finanzen_first_day_month($user->created);
   
+  $header = array('date' => t("Date"), 'summary' => t("Summary"), 'total' => t("Total"), 'edit' => t("Edit"), );
+
   while ($first_day_month < $current_date) {
-   	$content = _finanzen_summary_user_month($user->uid, $first_day_month) . $content;	
+   	$row = array('date' => date('F Y', $first_day_month),
+   	             'summary' => _finanzen_summary_user_month($user->uid, $first_day_month, $total),
+   	             'total' => round($total, 2) . ' hours',
+   	             'edit' => '<a href="/timesheet/month/' . $first_day_month . '"><img class="edit-pencil" src="/'
+                           . drupal_get_path('module', 'finanzen') . '/img/pencil.png" /></a>');
+	$rows[] = $row;
 	$first_day_month = _finanzen_get_first_day_next_month($first_day_month);
+	$total = 0;
   }
-  $content = "<b>Monthly Report for " . $user->name . '</b>' . $content;
+  
+  $rows = array_reverse($rows);
+  
+  $content = '<p class="month-report-title"><b>Monthly Report for ' . $user->name . '</b></p>';
+  $content .= theme_table($header, $rows);
+  
+  return $content;
+}
+
+/**
+ * 
+ */
+function _finanzen_get_user_name($id) {
+  $user = user_load($id);
+  return $user->name;
+}
+
+/**
+ * This function outputs a month navigator
+ */
+function _finanzen_finanzen_navigator($date)
+{ 
+  $current_date = time ();
+  $current_first_day_month = _finanzen_first_day_month($current_date);
+  // Init tool date -> 01.01.2014
+  $initial_time = "1388530800";
+  
+  $content = '<div class="navigator">';
+  
+  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
+  
+  $content .= '<div class="navigator-next">';
+  if ($date < $current_first_day_month) {
+	$content .= '<a title="Go to next month" href="/finanzen/' 
+	            . _finanzen_get_first_day_next_month($date) . '"> &#8811; </a>';
+  }
+  else { $content .= '<span class="muted"> &#8811; </span>'; }
+  $content .= "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > $initial_time) {
+  	$content .= '<a title="Go to previous month" href="/finanzen/' 
+  	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
+  }
+  else { $content .= '<span class="muted"> &#8810; </span>'; }
+  $content .= "</div>";
+  
+  $content .= "</div>"; //class="navigator"
+   
+  return $content;     
+} 
+
+/**
+ * The default page for /timesheet url, now showing some basic information
+ */
+function finanzen_finanzen_mainpage($date = 0) {
+  
+  $content ="";
+
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+  
+  $content .= _finanzen_finanzen_navigator($first_day_month);
+  
+  /* TABLA POR PERSONAS */
+  
+  $header = array('person' => array('data' => t("Person"),'class' => 'column_person'), 
+                  'summary' => t("Summary"), 
+                  'total' => array('data' => t("Total"),'class' => 'column_total'));
+  
+  $query = "SELECT DISTINCT uid FROM {finanzen_user_hours_projects} fuhp
+            WHERE fuhp.date>=%d AND fuhp.date<%d ORDER BY fuhp.project_id";
+  $queryResult = db_query ( $query, $first_day_month, _finanzen_get_first_day_next_month($first_day_month));
+  
+  while ($assignation = db_fetch_object($queryResult)){
+    $row = array('person' => _finanzen_get_user_name($assignation->uid),
+   	             'summary' => _finanzen_summary_user_month($assignation->uid, $first_day_month, $total),
+   	             'total' => round($total, 2) . ' hours');
+	$rows[] = $row;
+	$total = 0;
+  }
+  
+  $content .= theme_table($header, $rows);
+  
+  /* TABLA POR PROYECTOS */
+
+  $header2 = array('project' => array('data' => t("Project"),'class' => 'column_project'), 
+                   'summary' => t("Summary"), 
+                   'total' => array('data' => t("Total"),'class' => 'column_total'));
+  
+  $query = "SELECT DISTINCT project_id FROM {finanzen_user_hours_projects} fuhp
+            WHERE fuhp.date>=%d AND fuhp.date<%d";// ORDER BY fuhp.project_id";
+  $queryResult = db_query ( $query, $first_day_month, _finanzen_get_first_day_next_month($first_day_month));
+  
+  while ($assignation = db_fetch_object($queryResult)){
+    $row2 = array('project' => _finanzen_get_project_code($assignation->project_id),
+   	             'summary' => _finanzen_summary_project_month($assignation->project_id, $first_day_month, $total),
+   	             'total' => round($total, 2) . ' hours');
+	$rows2[] = $row2;
+	$total = 0;
+  }
+  
+  $content .= theme_table($header2, $rows2);
+  
   return $content;
 }
 
@@ -229,21 +388,19 @@ function finanzen_mainpage() {
  */
 function _finanzen_timesheet_month_navigator($date)
 { 
+  $current_date = time ();
+  $current_first_day_month = _finanzen_first_day_month($current_date);
+  global $user;
+  $user_first_day_month = _finanzen_first_day_month($user->created);
+  
   $content = '<div class="navigator">';
   
   $content .= '<div class="navigator-back"><a href="/timesheet"> &#8592; Back </a></div>';
   
-  $current_date = time ();
-  $current_first_day_month = _finanzen_first_day_month($current_date);
-  
-  global $user;
-  $user_first_day_month = _finanzen_first_day_month($user->created);
- 
   $content .= '<div class="navigator-date">';
   $content .= date('F Y', $date);
-  $content .= ' <a href="/timesheet/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
+  $content .= '  <a href="/timesheet/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
               . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit all</a>';
-  
   $content .= "</div>";
   
   $content .= '<div class="navigator-next">';
@@ -251,24 +408,20 @@ function _finanzen_timesheet_month_navigator($date)
 	$content .= '<a title="Go to next month" href="/timesheet/month/' 
 	            . _finanzen_get_first_day_next_month($date) . '"> &#8811; </a>';
   }
-  else {
-    $content .= '<span class="muted"> &#8811; </span>';
-  }
+  else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
-   
+  
   $content .= '<div class="navigator-prev">';
   if ($date > $user_first_day_month) {
   	$content .= '<a title="Go to previous month" href="/timesheet/month/' 
   	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
   }
-  else {
-    $content .= '<span class="muted"> &#8810; </span>';
-  }
+  else { $content .= '<span class="muted"> &#8810; </span>'; }
   $content .= "</div>";
   
-  $content .= "</div>";
+  $content .= "</div>"; // class="navigator"
    
-   return $content;     
+  return $content;     
 } 
 
 /**
@@ -281,18 +434,17 @@ function finanzen_timesheet_month( $first_day_month ) {
   $month = date('m', $first_day_month);
   $year = date('Y', $first_day_month);
   
-  //$content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day_month) . "</p>";
-  
   $content .= _finanzen_timesheet_month_navigator($first_day_month);
   
   $number_days = _finanzen_days_in_month($month, $year);
 
   $all_projects = $user->og_groups;
   
-  $array_header = array('date' => t("Date"));
+  $header = array('date' => array('data' => t("Date"),'class' => 'column_date'));
   
   foreach ($all_projects as $project) {
-    $array_header[] = _finanzen_get_project_code($project[nid]);
+    $project_code = _finanzen_get_project_code($project[nid]);
+    $header[$project_code] = array('data' => $project_code, 'class' => 'column_project');
   }
   
   $rows = array ();
@@ -321,7 +473,8 @@ function finanzen_timesheet_month( $first_day_month ) {
         }
         $link = '/timesheet/insert/' . $project[nid] . '/' . $day . '/' . $user->uid ;
         $rowdata[$project[title]] = '<a href="' . $link . '"><img class="edit-pencil" src="/'
-                                    . drupal_get_path('module', 'finanzen') . '/img/pencil.png" /></a><span class="edit-empty"> Empty</span>';
+                                    . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />
+                                    </a><span class="edit-empty"> Empty</span>';
       }
     }
     
@@ -333,7 +486,7 @@ function finanzen_timesheet_month( $first_day_month ) {
     $rows[] = $row; 
   }
   
-  $content .= theme_table($array_header, $rows);
+  $content .= theme_table($header, $rows);
   
   return $content;
 }
@@ -429,7 +582,8 @@ function finanzen_update_form ( $form, $id )
   $form = array (
     'update_time' => array (
       '#type' => 'fieldset',
-      '#title' => t( 'How many hours did you work in the project <b>' . $project_code . '</b> on <b>' . $human_date . '</b> ?' ),
+      '#title' => t( 'How many hours did you work in the project <b>' . $project_code .
+                     '</b> on <b>' . $human_date . '</b> ?' ),
       'hours' => array ( '#type' => 'textfield',
                          '#title' => 'Hours',
                          '#default_value' => $hours,
@@ -480,7 +634,7 @@ function finanzen_update_form_validate($form, &$form_state) {
 
 /* --------------------- Whole Month --------------------------------- */
 
-function finanzen_whole_month_navigator ( $date ) 
+function finanzen_edit_month_navigator ( $date ) 
 {
   $content = '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/timesheet/month/' . $date . '"> &#8592; Back </a></div>';
@@ -491,15 +645,15 @@ function finanzen_whole_month_navigator ( $date )
   return $content;
 }
 
-function finanzen_whole_month ( $first_day_month )
+function finanzen_edit_month ( $first_day_month )
 {
-  $content = finanzen_whole_month_navigator ($first_day_month);
-  $content .= drupal_get_form ('finanzen_whole_month_form', $first_day_month);
+  $content = finanzen_edit_month_navigator ($first_day_month);
+  $content .= drupal_get_form ('finanzen_edit_month_form', $first_day_month);
   return $content;
 }
 
 
-function finanzen_whole_month_form ( $form, $first_day_month )
+function finanzen_edit_month_form ( $form, $first_day_month )
 {
   // Clean the $form 
   $form = array ();
@@ -572,7 +726,7 @@ function finanzen_whole_month_form ( $form, $first_day_month )
       '#value' => t('Save'),
   );
   // Add theming function
-  $form['#theme'] = 'finanzen_whole_month_form_theme';
+  $form['#theme'] = 'finanzen_edit_month_form_theme';
   // This line is needed in order to keep the tree structure in form_state
   $form['projects']['#tree'] = TRUE;
   // Add redirection
@@ -582,15 +736,16 @@ function finanzen_whole_month_form ( $form, $first_day_month )
 
 }
 
-function theme_finanzen_whole_month_form_theme ( $form ) {
+function theme_finanzen_edit_month_form_theme ( $form ) {
      
-  $header = array('date' => t("Date"));
+  $header = array('date' => array('data' => t("Date"),'class' => 'column_date'));    
   
   $first_child = reset($form['projects']);
   
   $i=0;
   foreach (element_children($first_child) as $project_id) {
-    $header[] = _finanzen_get_project_code($project_id);
+    $project_code = _finanzen_get_project_code($project_id);
+    $header[$project_code] = array('data' => $project_code, 'class' => 'column_project');
     $projects[$i] = $project_id;
     $i++;
   }
@@ -617,7 +772,7 @@ function theme_finanzen_whole_month_form_theme ( $form ) {
   return $output;
 }
 
-function finanzen_whole_month_form_validate ( $form, &$form_state ) {
+function finanzen_edit_month_form_validate ( $form, &$form_state ) {
   
   foreach (element_children($form_state['values']['projects']) as $date) {
     
@@ -630,13 +785,14 @@ function finanzen_whole_month_form_validate ( $form, &$form_state ) {
       
       if (($form_state['values']['projects'][$date][$project_id]['minutes'] > 59) ||
          !(is_numeric($form_state['values']['projects'][$date][$project_id]['minutes']))) {
-        form_set_error("projects][$date][$project_id][minutes", t('Hours: You must enter a numeric value between 0 and 59.'));
+        form_set_error("projects][$date][$project_id][minutes", 
+                       t('Hours: You must enter a numeric value between 0 and 59.'));
       }
     }
   }
 }
 
-function finanzen_whole_month_form_submit ( $form, &$form_state )
+function finanzen_edit_month_form_submit ( $form, &$form_state )
 {
   global $user;
   
@@ -666,4 +822,3 @@ function finanzen_whole_month_form_submit ( $form, &$form_state )
     }
   }
 }
-

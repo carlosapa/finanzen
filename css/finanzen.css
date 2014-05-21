@@ -104,5 +104,23 @@ span.muted {
   color: #cccccc;
 }
 
+.month-report-title {
+  margin-bottom: 10px;
+}
+
+#features-menu li a.icon-menu-timesheet span.icon {
+  background:url(../img/time.png) 20px 20px no-repeat;
+  background-position: 0px 0px;
+}
+
+.column_project,
+.column_person,
+.column_total {
+ width: 120px;
+}
+
+.column_date {
+ width: 180px;
+}
 
 
