@@ -79,7 +79,7 @@ function finanzen_menu() {
    'type' => MENU_CALLBACK,
   );  
   
-  /*  */
+  /* Edit whole month */
   $items['timesheet/edit-month/%'] = array (
    'title' => t('Modify Whole Month'),
    'page callback' => 'finanzen_whole_month',
@@ -204,7 +204,7 @@ function _finanzen_summary_user_month($user_id, $date)
   $content .= '</div>';
 
   return $content;
-} 
+}
 
 /**
  * The default page for /timesheet url, now showing some basic information
@@ -224,32 +224,49 @@ function finanzen_mainpage() {
   return $content;
 }
 
-
 /**
  * This function outputs a month navigator
  */
-function _finanzen_month_navigator($first_day_month)
+function _finanzen_timesheet_month_navigator($date)
 { 
-  $content = "<p>";
-  $content .= '<a href="/timesheet">List months</a>';
+  $content = '<div class="navigator">';
+  
+  $content .= '<div class="navigator-back"><a href="/timesheet"> &#8592; Back </a></div>';
   
   $current_date = time ();
   $current_first_day_month = _finanzen_first_day_month($current_date);
   
   global $user;
   $user_first_day_month = _finanzen_first_day_month($user->created);
+ 
+  $content .= '<div class="navigator-date">';
+  $content .= date('F Y', $date);
+  $content .= ' <a href="/timesheet/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
+              . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit all</a>';
   
-  if ($first_day_month > $user_first_day_month) {
-  	  $content .= " | ";
-	  $content .= '<a href="/timesheet/month/' . _finanzen_get_first_day_previous_month($first_day_month) . '">Previous month</a>';
-  }
+  $content .= "</div>";
   
-  if ($first_day_month < $current_first_day_month) {
-      $content .= " | ";
-	  $content .= '<a href="/timesheet/month/' . _finanzen_get_first_day_next_month($first_day_month) . '">Next month</a>';
+  $content .= '<div class="navigator-next">';
+  if ($date < $current_first_day_month) {
+	$content .= '<a title="Go to next month" href="/timesheet/month/' 
+	            . _finanzen_get_first_day_next_month($date) . '"> &#8811; </a>';
   }
-    
-   $content .= "</p>";
+  else {
+    $content .= '<span class="muted"> &#8811; </span>';
+  }
+  $content .= "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > $user_first_day_month) {
+  	$content .= '<a title="Go to previous month" href="/timesheet/month/' 
+  	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
+  }
+  else {
+    $content .= '<span class="muted"> &#8810; </span>';
+  }
+  $content .= "</div>";
+  
+  $content .= "</div>";
    
    return $content;     
 } 
@@ -264,11 +281,9 @@ function finanzen_timesheet_month( $first_day_month ) {
   $month = date('m', $first_day_month);
   $year = date('Y', $first_day_month);
   
-  $content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day_month) . "</p>";
+  //$content .= "<p>Time Sheet for " . $user->name . " / " . date('F Y', $first_day_month) . "</p>";
   
-  $content .= _finanzen_month_navigator($first_day_month);
-  
-  $content .= '<p><a href="/timesheet/edit-month/' . $first_day_month . '">Modify whole month</a></p>';
+  $content .= _finanzen_timesheet_month_navigator($first_day_month);
   
   $number_days = _finanzen_days_in_month($month, $year);
 
@@ -288,23 +303,25 @@ function finanzen_timesheet_month( $first_day_month ) {
     $rowdata['date'] = date('d.m.Y, l', $day);
         
     foreach ($all_projects as $project) {
-      $link = "timesheet/insert/" . $project[nid] . "/" . $day . "/" . $user->uid ;
       $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
-                WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d" ;
+                WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d";
       $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
       $resource = db_fetch_object ( $queryResult );
       
       if (($resource) && ($resource->hours != 0)){
-        $link = "timesheet/update/" . $resource->nid ;
-        $rowdata[$project[title]] = '<span class="inserted-time">' . round($resource->hours, 2) 
-                                    . " hours</span> " . l ( t('Modify'), $link ) ;
+        $link = "/timesheet/update/" . $resource->nid ;
+        $rowdata[$project[title]] = '<a href="' . $link . '"><img class="edit-pencil" src="/' 
+                                    . drupal_get_path('module', 'finanzen') . '/img/pencil.png" /></a>' 
+                                    . '<span class="inserted-time">' . round($resource->hours, 2) . ' hours</span>' ;
       } 
       else {
         if ($resource->hours == 0) {
           $query_delete = "DELETE FROM finanzen_user_hours_projects WHERE nid='" . $resource->nid . "'";
           $query_deleteResult = db_query ( $query_delete );
         }
-        $rowdata[$project[title]] = "Empty " . l ( t('Insert'), $link ) ;
+        $link = '/timesheet/insert/' . $project[nid] . '/' . $day . '/' . $user->uid ;
+        $rowdata[$project[title]] = '<a href="' . $link . '"><img class="edit-pencil" src="/'
+                                    . drupal_get_path('module', 'finanzen') . '/img/pencil.png" /></a><span class="edit-empty"> Empty</span>';
       }
     }
     
@@ -463,9 +480,21 @@ function finanzen_update_form_validate($form, &$form_state) {
 
 /* --------------------- Whole Month --------------------------------- */
 
+function finanzen_whole_month_navigator ( $date ) 
+{
+  $content = '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/timesheet/month/' . $date . '"> &#8592; Back </a></div>';
+  $content .= '<div class="navigator-date">';
+  $content .= date('F Y', $date);
+  $content .= "</div></div>";
+  
+  return $content;
+}
+
 function finanzen_whole_month ( $first_day_month )
 {
-  $content .= drupal_get_form ( 'finanzen_whole_month_form', $first_day_month );
+  $content = finanzen_whole_month_navigator ($first_day_month);
+  $content .= drupal_get_form ('finanzen_whole_month_form', $first_day_month);
   return $content;
 }
 

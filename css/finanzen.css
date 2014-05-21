@@ -21,7 +21,7 @@
 
 #finanzen-insert-form .form-submit { margin-top: 5px; }
 
-.inserted-time { color: #FF0000; }
+.inserted-time {   font-weight: bold; margin-left:3px; }
 
 div.modified .form-item input { background-color : #FCF6D3; }
 
@@ -29,5 +29,80 @@ tr.weekend { background-color : #FFE9D2; }
 
 span.summary-project-month { margin-right: 10px; }
 div.summary-month { margin-bottom: 5px; }
+
+img.edit-pencil {
+  transition:opacity 250ms ease;
+  -webkit-transition:opacity 250ms ease;
+  -moz-transition: opacity 250ms ease;  
+  height:17px;
+  width:17px;
+  opacity:0.4;
+  margin: 0 2px 0 0;
+  display:inline-block;
+  position:relative;
+  top:3px;
+}
+
+img.edit-pencil:hover { 
+  transition: opacity 250ms ease;
+  -moz-transition: opacity 250ms ease;
+  -webkit-transition: opacity 250ms ease;
+  opacity: 0.8;
+}
+
+span.edit-empty {
+  opacity: 0.6;
+}
+
+table.sticky-header {
+  z-index: 1;
+}
+
+thead th {
+  font-weight: 900;
+  color: #333;
+  font-size: 1em !important;
+  padding: 7px 0 5px 5px;
+}
+
+div.navigator-next,
+div.navigator-prev {
+  background-color:#EAEAEA;
+  border:1px solid #CCCCCC;
+  float:right;
+  margin:0 0 5px 1px;
+  padding:3px;
+  font-size: 18pt;
+}
+
+div.navigator-back {
+  background-color:#EAEAEA;
+  border:1px solid #CCCCCC;
+  margin:0 10px 5px 0;
+  padding:3px;
+  float: left;
+}
+
+div.navigator-next a,
+div.navigator-prev a,
+div.navigator-back a {
+  color: #666666;
+}
+
+div.navigator-date {
+  float: left;
+  padding: 5px 0 0 5px;
+  font-size: 16pt;
+  color: #666666;
+}
+
+div.navigator-date a {
+  font-size: 10pt;
+}
+
+span.muted {
+  color: #cccccc;
+}
+
 
 
