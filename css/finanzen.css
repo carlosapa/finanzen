@@ -21,7 +21,7 @@
 
 #finanzen-insert-form .form-submit { margin-top: 5px; }
 
-.inserted-time {   font-weight: bold; margin-left:3px; }
+.inserted-time { font-weight: bold; margin-left:3px; }
 
 div.modified .form-item input { background-color : #FCF6D3; }
 
@@ -91,7 +91,7 @@ div.navigator-back a {
 
 div.navigator-date {
   float: left;
-  padding: 5px 0 0 5px;
+  padding: 5px 0 0 0px;
   font-size: 16pt;
   color: #666666;
 }
@@ -108,10 +108,14 @@ span.muted {
   margin-bottom: 10px;
 }
 
-#features-menu li a.icon-menu-timesheet span.icon {
-  background:url(../img/time.png) 20px 20px no-repeat;
-  background-position: 0px 0px;
+#features-menu li a.icon-timesheet span.icon {
+  background:url(../img/sprite-finanzen.png) 0px -460px no-repeat;
 }
+
+#features-menu li a.icon-finanzen span.icon {
+  background:url(../img/sprite-finanzen.png) -80px -460px no-repeat;
+}
+
 
 .column_project,
 .column_person,
@@ -123,4 +127,12 @@ span.muted {
  width: 180px;
 }
 
+table.timesheet-edit-month span.form-required{
+  display:none;
+}
+
+div.finanzen-title-table {
+  clear: both;
+  font-weight: bold;
+}
 
