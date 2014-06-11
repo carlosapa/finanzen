@@ -120,11 +120,15 @@ span.muted {
 .column_project,
 .column_person,
 .column_total {
- width: 120px;
+  width: 120px;
+}
+
+.timesheet-edit-month .column_project {	
+  width: 150px;
 }
 
 .column_date {
- width: 180px;
+  width: 140px;
 }
 
 table.timesheet-edit-month span.form-required{
@@ -134,5 +138,11 @@ table.timesheet-edit-month span.form-required{
 div.finanzen-title-table {
   clear: both;
   font-weight: bold;
+}
+
+table.finanzen {
+  width: auto;
+  clear: left;
+  min-width: 300px;
 }
 

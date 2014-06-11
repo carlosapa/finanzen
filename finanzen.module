@@ -14,11 +14,11 @@ function finanzen_menu() {
   $items = array();
   
   $items['timesheet'] = array(
-	'title' => t('Timesheet'),
-	'menu_name' => 'features',
+    'title' => t('Timesheet'),
+    'menu_name' => 'features',
     'page callback' => 'finanzen_timesheet_mainpage',
-	'access arguments' => array('add hours to projects'),
-	'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('add hours to projects'),
+    'type' => MENU_NORMAL_ITEM,
   );
   
   $items['timesheet/month/%'] = array (
@@ -32,36 +32,36 @@ function finanzen_menu() {
   
   /* Insert(project_id, date, user_id) */
   $items['timesheet/insert/%/%/%'] = array (
-   'title' => t('Add hours to Project'),
-   'page callback' => 'finanzen_insert',
-   'page arguments' => array ( 2, 3, 4 ),
-   'access arguments' => array('add hours to projects'),
-   'type' => MENU_CALLBACK,
+    'title' => t('Add hours to Project'),
+    'page callback' => 'finanzen_insert',
+    'page arguments' => array ( 2, 3, 4 ),
+    'access arguments' => array('add hours to projects'),
+    'type' => MENU_CALLBACK,
   );
   
   /* Update(register_id, date) */
   $items['timesheet/update/%/%'] = array (
-   'title' => t('Add hours to Project'),
-   'page callback' => 'finanzen_update',
-   'page arguments' => array ( 2, 3 ),
-   'access arguments' => array('add hours to projects'),
-   'type' => MENU_CALLBACK,
+    'title' => t('Add hours to Project'),
+    'page callback' => 'finanzen_update',
+    'page arguments' => array ( 2, 3 ),
+    'access arguments' => array('add hours to projects'),
+    'type' => MENU_CALLBACK,
   );  
   
   /* Edit whole month */
   $items['timesheet/edit-month/%'] = array (
-   'title' => t('Modify Whole Month'),
-   'page callback' => 'finanzen_edit_month',
-   'page arguments' => array ( 2 ),
-   'access arguments' => array('add hours to projects'),
-   'type' => MENU_CALLBACK,
+    'title' => t('Modify Whole Month'),
+    'page callback' => 'finanzen_edit_month',
+    'page arguments' => array ( 2 ),
+    'access arguments' => array('add hours to projects'),
+    'type' => MENU_CALLBACK,
   ); 
   
   $items['finanzen'] = array(
-	'title' => t('Finanzen'),
-	'menu_name' => 'features',
-	'page callback' => 'finanzen_finanzen_mainpage',
-	'access arguments' => array('administer finanzen'),
+    'title' => t('Finanzen'),
+    'menu_name' => 'features',
+    'page callback' => 'finanzen_finanzen_mainpage',
+    'access arguments' => array('administer finanzen'),
 	'type' => MENU_NORMAL_ITEM,
   );
 
@@ -81,6 +81,7 @@ function finanzen_perm ()
 */
 function finanzen_init(){
   drupal_add_css(drupal_get_path('module', 'finanzen') .'/css/finanzen.css');
+  drupal_add_js(drupal_get_path('module', 'finanzen') .'/js/finanzen.js');
 }
 
 /**
@@ -381,7 +382,7 @@ function finanzen_timesheet_mainpage() {
     $rows = array_reverse($rows);
   
     $content .= '<p class="month-report-title"><b>Monthly Report for ' . $user->name . '</b></p>';
-    $content .= theme_table($header, $rows);
+    $content .= theme_table($header, $rows, array('class' => 'finanzen'));
   }
   
   return $content;
@@ -475,7 +476,7 @@ function finanzen_timesheet_month( $first_day_month ) {
   for ($i = 1; $i <= $number_days; $i++) {
     $day = mktime(0,0,0,$month, $i, $year);
     $rowdata = array ();
-    $rowdata['date'] = date('d.m.Y, l', $day);
+    $rowdata['date'] = date('d.m.Y, D', $day);
         
     foreach ($all_projects as $project) {
       $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
@@ -509,7 +510,7 @@ function finanzen_timesheet_month( $first_day_month ) {
     $rows[] = $row; 
   }
   
-  $content .= theme_table($header, $rows);
+  $content .= theme_table($header, $rows, array('class' => 'finanzen'));
   
   return $content;
 }
@@ -772,7 +773,7 @@ function theme_finanzen_edit_month_form_theme ( $form ) {
   
   foreach (element_children($form['projects']) as $day) {
     $rowdata = array();
-    $rowdata[] = date('d.m.Y, l', (float)$day);
+    $rowdata[] = date('d.m.Y, D', (float)$day);
     for ($j=0;$j<$i;$j++) {
 	  $rowdata[] = drupal_render($form['projects'][$day][$projects[$j]]);
     }
@@ -786,7 +787,7 @@ function theme_finanzen_edit_month_form_theme ( $form ) {
   }
   
   // This is where we create the table using theme()
-  $output .= theme('table', $header, $rows, array('class' => 'timesheet-edit-month'));
+  $output .= theme('table', $header, $rows, array('class' => 'finanzen timesheet-edit-month'));
   
   $output .= drupal_render($form);
   return $output;
