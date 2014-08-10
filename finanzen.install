@@ -37,13 +37,181 @@ function finanzen_schema() {
     ),
     'primary key' => array('nid'),
   );
+  
+  $schema['finanzen_outflow_worker_month'] = array(
+    'description' => t('The money thet HB spends in personal monthly'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'date' => array (
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),       
+      'spend' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'taxrate' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+  
+  $schema['finanzen_outflow_sonstiges_month'] = array(
+    'description' => t('The money thet HB spends in sonstiges monthly'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'category_id' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'date' => array (
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),       
+      'spend' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  $schema['finanzen_outflow_sonstiges_categories'] = array(
+    'description' => t('Categories to applay sonsitiges spends every month'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'name' => array (
+        'type' => 'text',
+        'not null' => TRUE,
+      ),       
+      'active' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+  
+  $schema['finanzen_inflow'] = array(
+    'description' => t('The money that HB get from custumers'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'invoice_nr' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'project_id' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),  
+      'date' => array (
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),       
+      'spend' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'taxrate' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
 
   return $schema;
 }
 
+
 function finanzen_install() {
   // Create my tables.
   drupal_install_schema('finanzen');
+  
+  $options_sonstiges = array(
+	'Bewirtungskosten',
+	'Bewirtungskosten ohne MwSt',
+	'Buchführungskosten',
+    'Bürobedarf',
+	'Freie Mitarbeier (ohne Vorsteuer)',
+	'Freie Mitarbeier (ohne Vorsteuer) PK',
+	'Freie Mitarbeiter (19% Vorst.)',
+	'Fremdleistungen mit 19% PL',
+	'Fremdleistungen ohne UST',
+	'Fremdleistungen ohne Vorst PL',
+	'Gebühren',
+	'Gebühren (Bezirksamt)',
+	'Internet (1&1)', 
+	'Kontoführung',
+	'Kopien, Repro',
+	'Kurierkosten',
+	'Miete Büro',
+	'Miete Ritter 11',
+	'Mobilfunk',
+	'Nebenkosten Geldverkehr',
+	'nicht zuordenbare Rechnungen',
+	'Planungsleistungen (ohne Vorst.)',	
+	'Planungsleistungen mit USt 19%',
+	'Reisekosten (BVG)',
+	'Reisekosten mit 19% USt',
+	'Reisekosten mit 7% USt',	
+	'Reisekosten ohne USt',
+	'Strom',
+	'Telefon (Festnetz)',
+	'Versicherungen',
+	'Wareneingang 19% Vorsteuer',
+	'Wareneingang 7% Vorsteuer',
+	'Wartungskosten Software, Hardware',
+	'Zeitschriften, Bücher'
+	);
+
+  
+  foreach ($options_sonstiges as $option){
+  	 $query = "INSERT into {finanzen_outflow_sonstiges_categories} ( name ) values ( '%s' )";
+     $queryResult = db_query ($query, $option);
+  }
+
 }
 
 function finanzen_uninstall() {

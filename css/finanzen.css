@@ -27,6 +27,8 @@ div.modified .form-item input { background-color : #FCF6D3; }
 
 tr.weekend { background-color : #FFE9D2; }
 
+tr.deactivated { background-color : #EEEEEE; }
+
 span.summary-project-month { margin-right: 10px; }
 div.summary-month { margin-bottom: 5px; }
 
@@ -94,6 +96,7 @@ div.navigator-date {
   padding: 5px 0 0 0px;
   font-size: 16pt;
   color: #666666;
+  margin:0 10px 5px 0;
 }
 
 div.navigator-date a {
@@ -144,5 +147,9 @@ table.finanzen {
   width: auto;
   clear: left;
   min-width: 300px;
+}
+
+.outflow-personal-spend-field div {
+  display: inline !important;
 }
 
