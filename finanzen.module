@@ -136,7 +136,25 @@ function finanzen_menu() {
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
 	'file' => 'finanzen.inflow.inc',
-  );  
+  );
+
+  $items['finanzen/inflow/delete/confirmation/%'] = array (
+    //'title' => t('Add inflow'),
+    'page callback' => 'finanzen_inflow_delete_confirmation',
+    'page arguments' => array ( 4 ),
+    'access arguments' => array('administer finanzen'),
+    'type' => MENU_CALLBACK,
+    'file' => 'finanzen.inflow.inc',
+  );
+  
+  $items['finanzen/inflow/delete/%'] = array (
+    //'title' => t('Add inflow'),
+    'page callback' => 'finanzen_inflow_delete',
+    'page arguments' => array ( 3 ),
+    'access arguments' => array('administer finanzen'),
+    'type' => MENU_CALLBACK,
+    'file' => 'finanzen.inflow.inc',
+  );
 
   return $items;
 }
@@ -436,9 +454,11 @@ function _finanzen_edit_month_navigator ( $date )
  */
 function _finanzen_insert_update_navigator ( $date ) 
 {
-  $month = date('m', $date);
-  $year = date('Y', $date);
-  $first_day_month = mktime(0,0,0, $month, 1, $year);
+  //$month = date('m', $date);
+  //$year = date('Y', $date);
+  //$first_day_month = mktime(0,0,0, $month, 1, $year);
+  
+  $first_day_month = _finanzen_first_day_month($date);
   
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/timesheet/month/' . $first_day_month . '"> &#8592; Back </a></div>';
@@ -500,7 +520,7 @@ function finanzen_reports($date = 0) {
   
   /* TABLA POR PERSONAS */
   
-  $content .= '<div class="finanzen-title-table">Table per Person</div>';
+  $content .= '<div class="finanzen-title-table">Hours per Worker</div>';
   
   $header = array('person' => array('data' => t("Person"),'class' => 'column_person'), 
                   'summary' => t("Summary"), 
@@ -522,7 +542,7 @@ function finanzen_reports($date = 0) {
   
   /* TABLA POR PROYECTOS */
 
-  $content .= '<div class="finanzen-title-table">Table per Project</div>';
+  $content .= '<div class="finanzen-title-table">Hours per Project</div>';
 
   $header2 = array('project' => array('data' => t("Project"),'class' => 'column_project'), 
                    'summary' => t("Summary"), 

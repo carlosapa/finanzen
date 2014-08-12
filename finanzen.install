@@ -59,7 +59,7 @@ function finanzen_schema() {
         'default' => 0
       ),       
       'spend' => array (
-        'type' => 'int',
+        'type' => 'float',
         'not null' => TRUE,
         'default' => 0
       ),
@@ -93,7 +93,7 @@ function finanzen_schema() {
         'default' => 0
       ),       
       'spend' => array (
-        'type' => 'int',
+        'type' => 'float',
         'not null' => TRUE,
         'default' => 0
       ),
@@ -148,7 +148,7 @@ function finanzen_schema() {
         'default' => 0
       ),       
       'spend' => array (
-        'type' => 'int',
+        'type' => 'float',
         'not null' => TRUE,
         'default' => 0
       ),
@@ -159,6 +159,7 @@ function finanzen_schema() {
       ),
     ),
     'primary key' => array('nid'),
+    'unique keys' => array('invoice_nr' => array('invoice_nr')),
   );
 
   return $schema;

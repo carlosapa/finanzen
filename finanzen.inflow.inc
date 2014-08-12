@@ -14,23 +14,39 @@ function finanzen_inflow ( $date = 0 )
   
   $content .= _finanzen_inflow_navigator($first_day_month);
   
-  $header = array('invoice_nr' => t("Invoice Nr"), 'project' => t("Project"), 
-  				  'spend' => t("Spend"), 'taxrate' => t("Tax Rate"));
+  $header = array('invoice_nr' => t("Invoice Nr"), 
+  				  'project' => t("Project"), 
+  				  'spend' => t("Spend"), 
+  				  'taxrate' => t("Tax Rate"),
+  				  'edit' => t("Edit"), 
+  				  'delete' => t("Delete"));
   
-  //$query = "SELECT uid, name FROM users WHERE status=1 AND uid!=1";
   $query = "SELECT * FROM finanzen_inflow WHERE date=" . $first_day_month;
   $queryResult = db_query ($query);
-    
+
+  $total_amount = 0;
   while ($current_invoice = db_fetch_object($queryResult)) {
-  	$row = array( 'invoice_nr' => $current_invoice->invoice_nr,
-  	  		      'project' => _finanzen_get_project_code($current_invoice->project_id),
-  				  'spend' => $current_invoice->spend . ' €',
-   				  'taxrate' => $current_invoice->taxrate . '%' );
-   				  
-  	$rows[] = $row;
+    $row = array( 'invoice_nr' => $current_invoice->invoice_nr,
+	   		      'project' => _finanzen_get_project_code($current_invoice->project_id),
+	 			  'spend' => $current_invoice->spend . ' €',
+ 				  'taxrate' => $current_invoice->taxrate . '%',
+ 				  'edit' => 'Edit',
+   				  'delete' => '<a href="/finanzen/inflow/delete/confirmation/' . 
+   				  			   $current_invoice->invoice_nr . '/' . $first_day_month . '">delete</a>' );
+	   				  
+	$rows[] = $row;
+	$total_amount += $current_invoice->spend;
   }
   
-  $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  $content .= theme_table($header, $rows , array('class' => 'finanzen inflow'));
+  if (!$row)
+   	$content .= "<p syle='margin-bottom: 20px;'>Still no invoices this month</p>";
+  
+  $content .= '<p><b>Total inflow ' . date('F Y', $first_day_month) . '</b>: ' . 
+              number_format($total_amount, 2, ".", ".") . '€</p>';
+  
+  $content .= finanzen_inflow_add($first_day_month);
+  
   return $content;
 }
 
@@ -48,11 +64,8 @@ function _finanzen_inflow_navigator($date)
   
   $content .= '<div class="navigator-date">';
   $content .= date('F Y', $date);
-  $content .= '  <a href="/finanzen/inflow/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
-              . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit</a>';
   $content .= "</div>";
 
-  
   $content .= '<div class="navigator-next">';
   if ($date < $current_first_day_month) {
 	$content .= '<a title="Go to next month" href="/finanzen/inflow/' 
@@ -73,3 +86,112 @@ function _finanzen_inflow_navigator($date)
    
   return $content;     
 }
+
+/* ----------------------------------------------------------------------------- */
+/* ----------------------------- INSERT INVOICE  ------------------------------- */
+/* ----------------------------------------------------------------------------- */
+
+function finanzen_inflow_add ( $date )
+{
+  $content .= drupal_get_form ( 'finanzen_inflow_add_form', $date );
+  return $content;
+}
+
+
+function finanzen_inflow_add_form ( $form, $date )
+{
+  $human_date = date('F Y', $date);
+  $project_code = _finanzen_get_project_code($project_id);
+  
+  $query = "SELECT og.nid FROM og INNER JOIN node
+			ON og.nid = node.nid 
+			WHERE node.status=1";
+  $queryResult = db_query ($query);
+  
+  while ($project_id = db_fetch_object($queryResult))
+  	$projects[$project_id->nid] = _finanzen_get_project_code($project_id->nid);
+
+  $projects['0'] = 'NONE';
+ 
+  $form = array (
+    'inflow_add' => array (
+      '#type' => 'fieldset',
+      '#title' => t( 'Add new invoice for <b>' . $human_date . '</b>' ),
+      'invoice_nr' => array ( '#type' => 'textfield',
+                              '#title' => 'Invoice Nr',
+                              '#required' => TRUE,
+                              '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                              '#suffix' => '</div>',
+                            ),        
+      'project' => array ( '#type' => 'select',
+                           '#title' => 'Project',
+                           '#options' => $projects,
+                           '#required' => TRUE,
+                           '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                           '#suffix' => '</div>',
+                         ),
+      'spend' => array ( '#type' => 'textfield',
+                         '#title' => 'Spend in €',
+                         '#required' => TRUE,
+                         '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                         '#suffix' => '</div>',
+                       ),
+      'taxrate' => array ( '#type' => 'select',
+                           '#title' => 'Tax rate',
+                           '#options' => array('0' => '0%', '7' => '7%', '19' => '19%'),
+                           '#required' => TRUE,
+                           '#prefix' => '<div class="inflow_add to-left ">',
+                           '#suffix' => '</div>',
+                         ),
+      'date' => array ( '#type' => 'hidden', "#default_value" => $date ),
+      'submit' => array ( '#type' => 'submit',  
+      					  '#value' => t('Save'), 
+      					  '#prefix' => '<div class="clear-left bleed-left">',
+                          '#suffix' => '</div>',),
+    ),
+  );
+  
+  $form['#redirect'] = 'finanzen/inflow/' . _finanzen_first_day_month($date);
+  
+  return $form;
+}
+
+function finanzen_inflow_add_form_submit ( $form, &$form_state )
+{
+dsm($form_state);
+  $invoice_nr = $form_state['values']['invoice_nr'];
+  $project = $form_state['values']['project'];
+  $spend = $form_state['values']['spend'];
+  $taxrate = $form_state['values']['taxrate'];
+  $date = $form_state['values']['date'];
+  
+  $query = "INSERT into finanzen_inflow ( invoice_nr, project_id, spend, taxrate, date )
+            values ( '%s', %d, %f, %d, '%s' )";
+  $queryResult = db_query ( $query, $invoice_nr, $project, $spend, $taxrate, $date );
+}
+
+
+function finanzen_inflow_add_form_validate($form, &$form_state) 
+{
+  if (!is_numeric($form_state['values']['spend'])) {
+    form_set_error("spend", t('Spend: You must enter a numeric value.'));
+  }
+}
+
+/* INFLOW delete with confirmation */
+
+function finanzen_inflow_delete_confirmation ( $invoice_nr, $date = 0 )
+{
+  drupal_set_message ( 'Invoice number ' . $invoice_nr . ' is going to be deleted. This action cannot be undone. <a href="/finanzen/inflow/delete/' .  $invoice_nr . '/' . $date . '">Confirm</a>', "warning");
+  return finanzen_inflow($date);
+}
+
+function finanzen_inflow_delete ( $invoice_nr, $date = 0 )
+{
+  $query = "DELETE from finanzen_inflow WHERE invoice_nr=" . $invoice_nr ;
+  $queryResult = db_query ( $query );
+  drupal_set_message ( "Invoice number " . $invoice_nr . " deleted.", "status");
+  return finanzen_inflow($date);
+}
+
+

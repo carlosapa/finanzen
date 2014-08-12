@@ -16,7 +16,7 @@ world.addEventListener('seventh_day', function (e) {
 window.onload = function () {
 
 	set_the_table_width('table.finanzen', '.navigator');
-	center_month_name('div.navigator-date');
+	// center_month_name('div.navigator-date');
 	
 };
 

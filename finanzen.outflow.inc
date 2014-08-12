@@ -20,7 +20,8 @@ function finanzen_outflow_personal ( $date = 0 )
   //$query = "SELECT uid, name FROM users WHERE status=1 AND uid!=1";
   $query = "SELECT uid, name FROM users WHERE uid!=1 AND uid!=0";
   $queryResult = db_query ($query);
-    
+  
+  $total_amount = 0;  
   while ($current_user = db_fetch_object($queryResult)) {
     $query2 = "SELECT spend, taxrate FROM finanzen_outflow_worker_month 
     		   WHERE uid=" . $current_user->uid . " AND date=" . $first_day_month;
@@ -30,6 +31,8 @@ function finanzen_outflow_personal ( $date = 0 )
       $resource2->spend = 0; 
       $resource2->taxrate = 0; 
     }
+    
+  	$total_amount += $resource2->spend;
   	
   	$row = array( 'name' => $current_user->name,
   				  'spend' => $resource2->spend . ' €',
@@ -38,6 +41,11 @@ function finanzen_outflow_personal ( $date = 0 )
   }
   
   $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  
+  $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
+              number_format($total_amount, 2, ".", ".") . '€</p>';
+
+  
   return $content;
 }
 
@@ -208,7 +216,6 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
   $first_day_month = current(array_keys($form));
   
   foreach (element_children($form_state[$first_day_month]) as $user) {
-  	//dsm($user);
   	$spend = $form_state['values'][$first_day_month][$user]['spend'];
   	$taxrate = $form_state['values'][$first_day_month][$user]['taxrate'];
   	$reg_id = $form_state['values'][$first_day_month][$user]['id'];
@@ -222,7 +229,7 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
       if (($form_state['values'][$first_day_month][$user]['spend']!= 0) ||
           ($form_state['values'][$first_day_month][$user]['taxrate']!= 0)) {
 	    $query = "INSERT into {finanzen_outflow_worker_month} ( uid, date, spend, taxrate )
-                  values ( %d, '%s', %d, %d )";
+                  values ( %d, '%s', %f, %d )";
         $queryResult = db_query ( $query, $user, $first_day_month, $spend, $taxrate );   
       }
     }
@@ -235,8 +242,6 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
 
 
 function finanzen_outflow_sonstiges_categories () {
-
-  $content .= drupal_get_form ( 'finanzen_outflow_sonstiges_categories_add_form' );
   
   $header = array('name' => t("Name"), 'change_status' => t("Change status"));
   
@@ -252,7 +257,6 @@ function finanzen_outflow_sonstiges_categories () {
 	    $status_to_reach = 'Activate';
 	    $id_status_to_reach = '1';
     }
-    //$status_to_reach = (1 == $category->active) ? 'Deactivate' : 'Activate';
   	$rowdata = array( 'name' => $category->name,
   		    	      'change_status' => '<a href="/finanzen/outflow/sonstiges/categories/change_status/' 
   	                                 . $category->nid . '/' . $id_status_to_reach . '">' . $status_to_reach . '</a>' );
@@ -266,6 +270,9 @@ function finanzen_outflow_sonstiges_categories () {
   }
 
   $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  
+  $content .= drupal_get_form ( 'finanzen_outflow_sonstiges_categories_add_form' );
+    
   return $content;
 }
 
@@ -276,8 +283,14 @@ function finanzen_outflow_sonstiges_categories_add_form ( $form )
       '#type' => 'fieldset',
       '#title' => t( 'Add new category' ),
       'name' => array ( '#type' => 'textfield',
-                        '#required' => TRUE ),
-      'submit' => array ( '#type' => 'submit',  '#value' => t('Save'), ),
+        				'#title' => 'Description category',
+                        '#required' => TRUE,
+                        '#prefix' => '<div class="to-left">',
+                        '#suffix' => '</div>',),
+      'submit' => array ( '#type' => 'submit',  
+      					  '#value' => t('Save'),
+      					  '#prefix' => '<div class="clear-left bleed-left">',
+                          '#suffix' => '</div>',),
     ),
   );
   
@@ -324,7 +337,8 @@ function finanzen_outflow_sonstiges ( $date = 0 )
   
   $query = "SELECT * FROM finanzen_outflow_sonstiges_categories WHERE active=1";
   $queryResult = db_query ($query);
-    
+  
+  $total_amount = 0;
   while ($current_category = db_fetch_object($queryResult)) {
     $query2 = "SELECT spend FROM finanzen_outflow_sonstiges_month 
     		   WHERE category_id=" . $current_category->nid . " AND date=" . $first_day_month;
@@ -332,12 +346,18 @@ function finanzen_outflow_sonstiges ( $date = 0 )
     $resource2 = db_fetch_object ($queryResult2);
     if (!$resource2) : $resource2->spend = 0; endif;
   	
+  	$total_amount += $resource2->spend;
+  	
   	$row = array( 'name' => $current_category->name,
   				  'spend' => $resource2->spend . ' €');
   	$rows[] = $row;
   }
   
   $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  
+  $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
+              number_format($total_amount, 2, ".", ".") . '€</p>';
+              
   return $content;
 }
 
