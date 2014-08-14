@@ -29,7 +29,7 @@ var set_the_table_width = function (table_name, navi_name) {
 	
 	try {
 	
-		//declaro variables de datos qeu necesito
+		//declaro variables de datos que necesito
 		var doc     = document.body,
 	
 		table 	    = doc.querySelector(table_name),

@@ -6,7 +6,6 @@
 
 function finanzen_outflow_personal ( $date = 0 )
 {
-
   if ($date == 0) {
     $current_date = time ();
     $first_day_month = _finanzen_first_day_month($current_date);
@@ -40,7 +39,7 @@ function finanzen_outflow_personal ( $date = 0 )
   	$rows[] = $row;
   }
   
-  $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-personal'));
   
   $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
               number_format($total_amount, 2, ".", ".") . '€</p>';
@@ -191,7 +190,7 @@ function theme_finanzen_outflow_personal_edit_month_form_theme ( $form ) {
   }
   
   // This is where we create the table using theme()
-  $output .= theme('table', $header, $rows, array('class' => 'finanzen timesheet-edit-month'));
+  $output .= theme('table', $header, $rows, array('class' => 'finanzen'));
   
   $output .= drupal_render($form);
   return $output;
@@ -234,6 +233,8 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
       }
     }
   }
+  if ($queryResult)
+      drupal_set_message("Changes saved correctly", "status");
 }
 
 /* ----------------------------------------------------------------------------- */
@@ -245,16 +246,16 @@ function finanzen_outflow_sonstiges_categories () {
   
   $header = array('name' => t("Name"), 'change_status' => t("Change status"));
   
-  $query = "SELECT * FROM finanzen_outflow_sonstiges_categories ORDER BY active DESC";
+  $query = "SELECT * FROM finanzen_outflow_sonstiges_categories ORDER BY active DESC, name";
   $queryResult = db_query ($query);
     
   while ($category = db_fetch_object($queryResult)) {
     if ($category->active == 1) {
-	    $status_to_reach = 'Deactivate';
+	    $status_to_reach = 'deactivate';
 	    $id_status_to_reach = '0';
     }
     else {
-	    $status_to_reach = 'Activate';
+	    $status_to_reach = 'activate';
 	    $id_status_to_reach = '1';
     }
   	$rowdata = array( 'name' => $category->name,
@@ -269,7 +270,7 @@ function finanzen_outflow_sonstiges_categories () {
   	$rows[] = $row;
   }
 
-  $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-sonstiges-categories'));
   
   $content .= drupal_get_form ( 'finanzen_outflow_sonstiges_categories_add_form' );
     
@@ -304,6 +305,8 @@ function finanzen_outflow_sonstiges_categories_add_form_submit ( $form, &$form_s
   $name = $form_state['values']['name'];
   $query = "INSERT into {finanzen_outflow_sonstiges_categories} ( name ) values ('%s')";
   $queryResult = db_query ( $query, $name );
+  if ($queryResult)
+    drupal_set_message("Category " . $name . " added correctly", "status");
 }
 
 function finanzen_outflow_sonstiges_categories_change_status ( $id, $status ) 
@@ -311,10 +314,15 @@ function finanzen_outflow_sonstiges_categories_change_status ( $id, $status )
   $query = "UPDATE finanzen_outflow_sonstiges_categories SET active='" . $status . "' 
             WHERE nid='" . $id . "'";
   
-  if ($queryResult = db_query ( $query ))
-    drupal_set_message("Category status changed", 'status');
+  if ($status == 1)
+    $message = "Category activated";
   else
-	drupal_set_message("Category status not changed", 'error');
+    $message = "Category deactivated";
+    
+  if ($queryResult = db_query ( $query ))
+    drupal_set_message($message, 'status');
+  else
+	drupal_set_message("Category status not changed, an error occurred.", 'error');
 	
   drupal_goto('finanzen/outflow/sonstiges/categories');
 }
@@ -353,7 +361,7 @@ function finanzen_outflow_sonstiges ( $date = 0 )
   	$rows[] = $row;
   }
   
-  $content .= theme_table($header, $rows , array('class' => 'finanzen'));
+  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-sonstiges'));
   
   $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
               number_format($total_amount, 2, ".", ".") . '€</p>';
@@ -495,7 +503,7 @@ function theme_finanzen_outflow_sonstiges_edit_month_form_theme ( $form ) {
   }
   
   // This is where we create the table using theme()
-  $output .= theme('table', $header, $rows, array('class' => 'finanzen timesheet-edit-month'));
+  $output .= theme('table', $header, $rows, array('class' => 'finanzen'));
   
   $output .= drupal_render($form);
   return $output;

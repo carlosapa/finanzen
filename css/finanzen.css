@@ -65,7 +65,17 @@ div.navigator-date a { font-size: 10pt; }
 .inflow_add select,
 .inflow_add input {	height: 25px; }
 
+#finanzen-outflow-sonstiges-categories-add-form input.form-text { width: 360px; }
+
 /* End Fields in forms */
+
+table.outflow-sonstiges-categories,
+#finanzen-outflow-sonstiges-categories-add-form
+{ width: 400px !important; }
+
+table.outflow-sonstiges,
+table.outflow-personal
+{ width: 300px !important; }
 
 table.inflow,
 #finanzen-inflow-add-form { width: 575px !important; }
@@ -140,6 +150,14 @@ span.muted {
 .column_person,
 .column_total {
   width: 120px;
+}
+
+.column_money {
+  width: 80px;
+}
+
+.column_outflow_category {
+  width: 300px;
 }
 
 .timesheet-edit-month .column_project {	
