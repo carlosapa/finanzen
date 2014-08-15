@@ -397,19 +397,43 @@ function _finanzen_outflow_sonstiges_get_category_name ($id) {
 	return $res;
 }
 
-function _finanzen_get_percent_worker_month($project_id, $date) {
-	$total_hours_in_month = 0;
-	$total_hours_in_project = 0;
-	$query = "SELECT hours, project_id FROM finanzen_user_hours_projects 
-		  	  WHERE date>" . $date . " AND date<" . _finanzen_get_first_day_next_month($date);
-    $queryResult = db_query ( $query );
-    while ($assignation = db_fetch_object($queryResult)) {
-    	$total_hours_in_month += $assignation->hours;
-	    if ($assignation->project_id == $project_id)
-	    	$total_hours_in_project += $assignation->hours;
+function _finanzen_get_coef_projects_month ($months_curr_year) {
+	
+	$coef = array();
+	//$total_hours = 0;
+	
+	foreach ($months_curr_year as $month_name => $month_data) {
+		$total_hours_month = array();
+		$total_user_hours_month = array();
+		
+		$date = $month_data['date'];
+	
+		$query = "SELECT uid, project_id, hours FROM finanzen_user_hours_projects 
+			  	  WHERE date>=" . $date . " AND date<" . _finanzen_get_first_day_next_month($date);
+			  	  
+		$queryResult = db_query ( $query );
+	    while ($assignation = db_fetch_object($queryResult)) {
+	    	//$total_hours += $assignation->hours;
+	    	$total_hours_month['#value'] += $assignation->hours;
+	    	$total_hours_month[$assignation->project_id]['#value'] += $assignation->hours;
+	    	$total_hours_month[$assignation->project_id][$assignation->uid]['#value'] += $assignation->hours;
+	    	$total_user_hours_month[$assignation->uid]['#value'] += $assignation->hours;
+		}
+		
+		foreach (element_children($total_hours_month) as $project_id) {
+			$coef[$month_name][$project_id]['#coef'] = $total_hours_month[$project_id]['#value'] / $total_hours_month['#value'];
+			foreach (element_children($total_hours_month[$project_id]) as $user_id) {
+			  $coef[$month_name][$project_id][$user_id] =  
+			    $total_hours_month[$project_id][$user_id]['#value'] / $total_user_hours_month[$user_id]['#value'];
+			}
+		}
+	
 	}
 	
-	return ($total_hours_in_project / $total_hours_in_month);
+	//$coef['#total_hours'] = $total_hours;
+
+	return $coef;
+	
 }
 
 /* ------------------------------------------------------------------------------ */
@@ -421,11 +445,11 @@ function _finanzen_get_percent_worker_month($project_id, $date) {
  */
 function finanzen_mainpage( $date = 0 ) {
 
-  //$content .= finanzen_reports_outflow_personal($date);
-  //$content .= finanzen_reports_outflow_sonstiges($date);
+  $content .= finanzen_reports_outflow_personal($date);
+  $content .= finanzen_reports_outflow_sonstiges($date);
   $content .= finanzen_reports_inflow($date);
   $content .= finanzen_reports_summary_projects($date);
-  $content .= "</br></br></br></br></br></br>";
+  $content .= "</br></br></br></br>";
 
   $content .= '<p><a href="/finanzen/reports">Monthly Reports</a></p>';
   $content .= '<p>--------------------------------------------------</p>';
@@ -598,13 +622,16 @@ function finanzen_reports_outflow_personal( $date = 0 ) {
   $months_curr_year = _finanzen_list_months_year ($first_day_month, 1);
   $header = array('person' => array('data' => t("Person"),'class' => 'column_person')) + $months_curr_year;
                     
-  $query = "SELECT DISTINCT uid FROM finanzen_outflow_worker_month";
+  $query = "SELECT DISTINCT finanzen_outflow_worker_month.uid FROM finanzen_outflow_worker_month 
+            INNER JOIN users ON finanzen_outflow_worker_month.uid=users.uid
+            LEFT JOIN users_roles ON finanzen_outflow_worker_month.uid=users_roles.uid
+            ORDER BY users_roles.rid DESC, users.name";
   $queryResult = db_query ( $query );
   
   $final_total = array();
   
   while ($user = db_fetch_object($queryResult)){
-    $row = array('person' => _finanzen_get_user_name($user->uid));
+    $row = array('person' => array('data' => _finanzen_get_user_name($user->uid), 'class' => 'not-empty'));
     $last_row['person'] = "<b>TOTAL</b>";
 	
 	foreach ($months_curr_year as $month_name => $month_data ) {
@@ -620,18 +647,25 @@ function finanzen_reports_outflow_personal( $date = 0 ) {
 			$total_user_month += $outflow->spend;
 			$last_row[$month_name] += $outflow->spend;
 		}
-		$row[] = $total_user_month . " €" ;
+		
+		if ($total_user_month > 0)
+  		  $row[] = array('data' => number_format($total_user_month, 2, ",", ".") . " €", 'class' => 'not-empty');
+  		else 
+    	  $row[] = number_format($total_user_month, 2, ",", ".") . " €";
+	
 	}
 	$rows[] = $row;
   }
 
   foreach ($last_row as $month_name => $month_data){
-		$last_row[$month_name] = "<b>" . $month_data . " €</b>";
+	 if ($month_name != "person")
+		$last_row[$month_name] = "<b>" . number_format($month_data, 2, ",", ".") . " €</b>";
   }
-  $rows[] = $last_row;
   
-  $content .= theme_table($header, $rows);
-
+  $rows[] = array('data' => $last_row, 'class' => 'not-empty');
+  
+  $content .= theme_table($header, $rows, array('class' => 'finanzen reports'));
+  
   return $content;
 }
 
@@ -649,13 +683,15 @@ function finanzen_reports_outflow_sonstiges( $date = 0 ) {
   $months_curr_year = _finanzen_list_months_year ($first_day_month, 2); 
   $header = array('name' => array('data' => t("Category"),'class' => 'column_outflow_category')) + $months_curr_year;
                     
-  $query = "SELECT DISTINCT category_id FROM finanzen_outflow_sonstiges_month";
+  $query = "SELECT DISTINCT category_id FROM finanzen_outflow_sonstiges_month ORDER BY category_id";
   $queryResult = db_query ( $query );
   
   $final_total = array();
+  $last_row = array();
   
   while ($category = db_fetch_object($queryResult)){
-    $row = array('name' => _finanzen_outflow_sonstiges_get_category_name($category->category_id));
+    $row = array('name' => array('data' => _finanzen_outflow_sonstiges_get_category_name($category->category_id),  
+                                 'class' => 'not-empty'));
     $last_row['name'] = "<b>TOTAL</b>";
 	
 	foreach ($months_curr_year as $month_name => $month_data ) {
@@ -671,17 +707,21 @@ function finanzen_reports_outflow_sonstiges( $date = 0 ) {
 			$total_category_month += $outflow->spend;
 			$last_row[$month_name] += $outflow->spend;
 		}
-		$row[] = $total_category_month . " €";
+		if ($total_category_month > 0)
+  		  $row[] = array('data' => number_format($total_category_month, 2, ",", ".") . " €", 'class' => 'not-empty');
+  		else
+		  $row[] = number_format($total_category_month, 2, ",", ".") . " €";
 	}
 	$rows[] = $row;
   }
 
   foreach ($last_row as $month_name => $month_data){
-		$last_row[$month_name] = "<b>" . $month_data . " €</b>";
+       if ($month_name != "name")
+		 $last_row[$month_name] = "<b>" . number_format($month_data, 2, ",", ".") . " €</b>";
   }
-  $rows[] = $last_row;
+  $rows[] = array('data' => $last_row, 'class' => 'not-empty');
   
-  $content .= theme_table($header, $rows);
+  $content .= theme_table($header, $rows, array('class' => 'finanzen reports'));
 
   return $content;
 }
@@ -704,9 +744,11 @@ function finanzen_reports_inflow ( $date = 0 ) {
   $queryResult = db_query ( $query );
   
   $final_total = array();
+  $last_row = array();
   
   while ($project = db_fetch_object($queryResult)){
-    $row = array('project' => _finanzen_get_project_code($project->project_id));
+    $row = array('project' => array('data' => _finanzen_get_project_code($project->project_id),  
+                                 'class' => 'not-empty'));
     $last_row['name'] = "<b>TOTAL</b>";
 	
 	foreach ($months_curr_year as $month_name => $month_data ) {
@@ -722,17 +764,22 @@ function finanzen_reports_inflow ( $date = 0 ) {
 			$total_project_month += $outflow->spend;
 			$last_row[$month_name] += $outflow->spend;
 		}
-		$row[] = $total_project_month . " €" ;
+		
+		if ($total_project_month > 0)
+  		  $row[] = array('data' => number_format($total_project_month, 2, ",", ".") . " €", 'class' => 'not-empty');
+  		else
+  		  $row[] = number_format($total_project_month, 2, ",", ".") . " €" ;
 	}
 	$rows[] = $row;
   }
 
   foreach ($last_row as $month_name => $month_data){
-		$last_row[$month_name] = "<b>" . $month_data . " €</b>";
+     if ($month_name != "name")
+		$last_row[$month_name] = "<b>" . number_format($month_data, 2, ",", ".") . " €</b>";
   }
-  $rows[] = $last_row;
+  $rows[] = array('data' => $last_row, 'class' => 'not-empty');
   
-  $content .= theme_table($header, $rows);
+  $content .= theme_table($header, $rows, array('class' => 'finanzen reports'));
 
   return $content;
 }
@@ -746,63 +793,126 @@ function finanzen_reports_summary_projects ( $date = 0 ) {
   }
   else { $first_day_month = $date; }
   
+  $total_studio_year = 0;
+  $months_curr_year = _finanzen_list_months_year ($first_day_month);
+  $coef = _finanzen_get_coef_projects_month($months_curr_year);
+  
   $query = "SELECT nid FROM og";
   $queryResult = db_query ( $query );
-  $months_curr_year = _finanzen_list_months_year ($first_day_month); 
   
   while ($project = db_fetch_object($queryResult)) {
   	  
   	  $rows = array();	  
 	  $last_row = array();
+	  $total_project_year = 0;
 	  
-	  $content .= '<div class="finanzen-title-table">Project ' . _finanzen_get_project_code($project->nid) . '</div>';
+	  $project_code = _finanzen_get_project_code($project->nid);
+	  
+	  $content .= '<div class="finanzen-title-table">Project ' . $project_code . '</div>';
   	  $header = array('concept' => array('data' => t("Concept"),'class' => 'column_person')) + $months_curr_year;
-	  $row = array('concept' => "Inflow");
-	  $row2 = array('concept' => "Outflow Personal");
-	  $row3 = array('concept' => "Outflow Sonstiges");
+  	  $row_inflow = array('concept' => array('data' => "Inflow", 'class' => 'not-empty'));
+   	  $row_outflow_personal = array('concept' => array('data' => "Outflow Personal", 'class' => 'not-empty'));
+   	  $row_outflow_sonstiges = array('concept' => array('data' => "Outflow Sonstiges", 'class' => 'not-empty'));
+   	  
       $last_row['name'] = "<b>TOTAL</b>";
 
-  	  foreach ($months_curr_year as $month_name => $month_data ) {	
+  	  foreach ($months_curr_year as $month_name => $month_data ) {
+  	  
 	  	  $total_project_month = 0;
 	  	  if (empty($last_row[$month_name])): $last_row[$month_name] = 0; endif;
 	  	  	
+	  	  
 	  	  $query2 = "SELECT * from finanzen_inflow
 	  	    		 WHERE project_id=" . $project->nid . " AND date=" . $month_data['date'];
 	  	  $queryResult2 = db_query ( $query2 );
 	  	  	
 	  	  while ($outflow = db_fetch_object($queryResult2)) {
 		  	  $total_project_month += $outflow->spend;
-		  	  $last_row[$month_name] += $outflow->spend;
 		  }
 		  
-		  $row[] = $total_project_month . " €" ;
+		  if ($total_project_month > 0)
+  		    $row_inflow[] = array('data' => number_format($total_project_month, 2, ",", ".") . " €", 'class' => 'not-empty');
+  		  else
+  		    $row_inflow[] = number_format($total_project_month, 2, ",", ".") . " €";
 		  
-		  $query3 = "SELECT DISTINCT uid FROM finanzen_user_hours_projects 
-		  			 WHERE project_id=" . $project->nid . " AND date=" . $month_data['date'];
+		  
+		  $query3 = "SELECT uid, spend FROM finanzen_outflow_worker_month
+		  			 WHERE date=" . $month_data['date'];
 		  $queryResult3 = db_query ( $query3 );
-		  while ($user = db_fetch_object($queryResult3)) {
-			  $coeficiente = _finanzen_get_percent_worker_month($project->nid, $month_data['date']);
-			  
+		  
+		  $outflow_personal_project_month = 0;
+		  while ($outflow = db_fetch_object($queryResult3)) {
+		  	  $outflow_personal_project_month += ($outflow->spend * $coef[$month_name][$project->nid][$outflow->uid]);
 		  }
 		  
-		  $row2[] = " ";
+		  if ($outflow_personal_project_month > 0)
+  		    $row_outflow_personal[] = array('data' => number_format($outflow_personal_project_month, 2, ",", ".") . " €", 'class' => 'not-empty');
+  		  else
+  		    $row_outflow_personal[] = number_format($outflow_personal_project_month, 2, ",", ".") . " €";
 		  
-		  $row3[] = " ";
+		  
+		  $query4 = "SELECT category_id, spend FROM finanzen_outflow_sonstiges_month 
+		  			 WHERE date=" . $month_data['date'];
+		  $queryResult4 = db_query ( $query4 );
+		  
+		  $outflow_sontiges_project_month = 0;
+		  while ($outflow = db_fetch_object($queryResult4)) {
+		  	  $outflow_sontiges_project_month += ($outflow->spend * $coef[$month_name][$project->nid]['#coef']);
+		  }
+		  
+		  if ($outflow_sontiges_project_month > 0)
+  		    $row_outflow_sonstiges[] = array('data' => number_format($outflow_sontiges_project_month, 2, ",", ".") . " €", 'class' => 'not-empty');
+  		  else
+  		    $row_outflow_sonstiges[] = number_format($outflow_sontiges_project_month, 2, ",", ".") . " €";
+		  
+		  $last_row[$month_name] = $total_project_month - ($outflow_personal_project_month + $outflow_sontiges_project_month);
 	  }
 		
-	$rows[] = $row;
-	$rows[] = $row2;
-	$rows[] = $row3;	
+	$rows[] = $row_inflow;
+	$rows[] = $row_outflow_personal;
+	$rows[] = $row_outflow_sonstiges;
 	
   	foreach ($last_row as $month_name => $month_data){
-		$last_row[$month_name] = "<b>" . $month_data . " €</b>";
+  		if ($month_name != "name") {
+		  $last_row[$month_name] = "<b>" . number_format($month_data, 2, ",", ".") . " €</b>";
+		  if ($month_data < 0)
+		      $last_row[$month_name] = array('data' => $last_row[$month_name],'class' => 'red');
+		  elseif ($month_data > 0)
+    		  $last_row[$month_name] = array('data' => $last_row[$month_name],'class' => 'green');
+    	}
+    	$total_project_year += $month_data;
     }
 
-  	$rows[] = $last_row;
-  	$content .= theme_table($header, $rows);
+    $rows[] = array('data' => $last_row, 'class' => 'not-empty');
+    
+    $content .= theme_table($header, $rows, array('class' => 'finanzen reports'));
+    
+    if ($total_project_year > 0)
+      $class = "class='green'"; 
+    elseif ($total_project_year < 0)
+      $class = "class='red'";
+    else
+      $class = "";
+      
+    $content .= "<span style='font-size:16px'>TOTAL " . date("Y", $first_day_month) . " " . $project_code . ": <b " . $class . ">" . 
+                number_format($total_project_year, 2, ",", ".") . " €</b></span><br/><br/>";
+  
+    $total_studio_year += $total_project_year;
   }
+  
+  if ($total_studio_year > 0)
+      $class = "class='green'"; 
+    elseif ($total_studio_year < 0)
+      $class = "class='red'";
+    else
+      $class = "";
+  
+  $content .= "<span style='font-size:20px'>TOTAL HEIMBALP " . date("Y", $first_day_month) .  ": <b " . $class . ">" . 
+                number_format($total_studio_year, 2, ",", ".") . " €</b></span><br/><br/>";
 
   return $content;
 }
+
+
 
 

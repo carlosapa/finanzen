@@ -17,7 +17,11 @@ function finanzen_outflow_personal ( $date = 0 )
   $header = array('name' => t("Name"), 'spend' => t("Spend"), 'taxrate' => t("Tax Rate") );
   
   //$query = "SELECT uid, name FROM users WHERE status=1 AND uid!=1";
-  $query = "SELECT uid, name FROM users WHERE uid!=1 AND uid!=0";
+  $query = "SELECT users.uid, users.name FROM users 
+  			LEFT JOIN users_roles ON users.uid=users_roles.uid
+  			WHERE users.uid!=1 AND users.uid!=0
+  			ORDER BY users_roles.rid DESC, users.name";
+  
   $queryResult = db_query ($query);
   
   $total_amount = 0;  
@@ -26,9 +30,9 @@ function finanzen_outflow_personal ( $date = 0 )
     		   WHERE uid=" . $current_user->uid . " AND date=" . $first_day_month;
     $queryResult2 = db_query ($query2);
     $resource2 = db_fetch_object ($queryResult2);
-    if (!$resource2) { 
-      $resource2->spend = 0; 
-      $resource2->taxrate = 0; 
+    if (!$resource2) {
+      $resource2->spend = 0;
+      $resource2->taxrate = 0;
     }
     
   	$total_amount += $resource2->spend;
@@ -117,7 +121,10 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
   // Clean the $form 
   $form = array ();
   
-  $query = "SELECT uid, name FROM users WHERE status=1 AND uid!=1";
+  $query = "SELECT users.uid, users.name FROM users
+  			LEFT JOIN users_roles ON users.uid=users_roles.uid
+  			WHERE users.status=1 AND users.uid!=1
+  			ORDER BY users_roles.rid DESC, users.name";
   $queryResult = db_query ($query);
     
   while ($current_user = db_fetch_object($queryResult)) {
@@ -138,7 +145,6 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
   	$form[$first_day_month][$current_user->uid] = array (
       'spend' => array ( '#type' => 'textfield',
                          '#default_value' => $resource2->spend,
-                         //'#maxlength' => 2,
                          '#weight' => 1,
                          '#required' => TRUE,
                          '#prefix' => '<div class="outflow-personal-spend-field ' . $css_class . '">',
@@ -442,14 +448,13 @@ function finanzen_outflow_sonstiges_edit_month_form ( $form, $first_day_month )
   $queryResult = db_query ($query);
     
   while ($current_category = db_fetch_object($queryResult)) {
-    $query2 = "SELECT spend FROM finanzen_outflow_sonstiges_month 
+    $query2 = "SELECT spend, nid FROM finanzen_outflow_sonstiges_month 
     		   WHERE category_id=" . $current_category->nid . " AND date=" . $first_day_month;
     $queryResult2 = db_query ($query2);
     $resource2 = db_fetch_object ($queryResult2);
     
-    if ($resource2) {
+    if ($resource2)
 	    $css_class = "modified";	    
-    }
     else {
 	    $css_class = "";
 	    $resource2->spend = 0;
@@ -526,8 +531,6 @@ function finanzen_outflow_sonstiges_edit_month_form_validate ( $form, &$form_sta
 function finanzen_outflow_sonstiges_edit_month_form_submit ( $form, &$form_state )
 {
   $first_day_month = current(array_keys($form));
-  
-  //dsm($form_state);
   
   foreach (element_children($form_state[$first_day_month]) as $category_id) {
     // dsm($category_id);

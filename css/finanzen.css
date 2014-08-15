@@ -157,7 +157,7 @@ span.muted {
 }
 
 .column_outflow_category {
-  width: 300px;
+  width: 270px;
 }
 
 .timesheet-edit-month .column_project {	
@@ -194,4 +194,24 @@ input.form-text, select, textarea {
 input.error {
   border-width: 2px !important;
   border-color: #f00 !important;
+}
+
+
+/* Celdas sin info relevante */
+table.reports td { 
+  color: #999;
+}
+
+/* Celdas con info relevante */
+table.reports td.not-empty,
+table.reports tr.not-empty td  {
+  color: #000;
+}
+
+.red {
+  color: #d00 !important;
+}
+
+.green {
+  color: #0a0 !important;
 }
