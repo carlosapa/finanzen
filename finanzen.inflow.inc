@@ -63,6 +63,8 @@ function _finanzen_inflow_navigator($date)
   
   $content .= '<div class="navigator">';
   
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
+  
   $content .= '<div class="navigator-date">';
   $content .= date('F Y', $date);
   $content .= "</div>";
@@ -286,8 +288,8 @@ function finanzen_inflow_delete_confirmation ( $id, $date = 0 )
 {
   $query = "SELECT invoice_nr FROM finanzen_inflow WHERE nid=" . $id;
   $queryResult = db_query ($query);
-  $incoice_nr = db_fetch_object($queryResult);
-  drupal_set_message ( 'Invoice number ' . $invoice_nr . ' is going to be deleted. This action cannot be undone. 
+  $invoice = db_fetch_object($queryResult);
+  drupal_set_message ( 'Invoice number ' . $invoice->invoice_nr . ' is going to be deleted. This action cannot be undone. 
                         <a href="/finanzen/inflow/delete/' .  $id . '/' . $date . '">Confirm</a>', "warning");
   return finanzen_inflow($date);
 }

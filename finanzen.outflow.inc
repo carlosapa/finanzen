@@ -25,22 +25,32 @@ function finanzen_outflow_personal ( $date = 0 )
   $queryResult = db_query ($query);
   
   $total_amount = 0;  
+  
   while ($current_user = db_fetch_object($queryResult)) {
-    $query2 = "SELECT spend, taxrate FROM finanzen_outflow_worker_month 
+    
+    $query2 = "SELECT nid, spend, taxrate FROM finanzen_outflow_worker_month 
     		   WHERE uid=" . $current_user->uid . " AND date=" . $first_day_month;
     $queryResult2 = db_query ($query2);
     $resource2 = db_fetch_object ($queryResult2);
+    
     if (!$resource2) {
       $resource2->spend = 0;
       $resource2->taxrate = 0;
     }
-    
+    elseif ($resource2->spend == 0) {
+    	// Si el gasto es 0 (tras una edicion) borramos en registro de la BD
+    	$query_delete = "DELETE FROM finanzen_outflow_worker_month WHERE nid='" . $resource2->nid . "'";
+    	$query_deleteResult = db_query ( $query_delete );	 
+    	$resource2->taxrate = 0;   
+    }
+        
   	$total_amount += $resource2->spend;
   	
   	$row = array( 'name' => $current_user->name,
   				  'spend' => $resource2->spend . ' €',
    				  'taxrate' => $resource2->taxrate . '%' );
   	$rows[] = $row;
+  	
   }
   
   $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-personal'));
@@ -48,7 +58,6 @@ function finanzen_outflow_personal ( $date = 0 )
   $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
               number_format($total_amount, 2, ".", ".") . '€</p>';
 
-  
   return $content;
 }
 
@@ -100,7 +109,8 @@ function _finanzen_outflow_personal_navigator($date)
 function _finanzen_outflow_personal_edit_month_navigator ( $date ) 
 {
   $content .= '<div class="navigator">';
-  $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/' . $date . '"> &#8592; Back</a></div>';
+  //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/' . $date . '"> &#8592; Back</a></div>';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
   $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
@@ -123,7 +133,7 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
   
   $query = "SELECT users.uid, users.name FROM users
   			LEFT JOIN users_roles ON users.uid=users_roles.uid
-  			WHERE users.status=1 AND users.uid!=1
+  			WHERE users.uid!=0 AND users.uid!=1
   			ORDER BY users_roles.rid DESC, users.name";
   $queryResult = db_query ($query);
     
@@ -141,7 +151,7 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
 	    $resource2->spend = 0;
 	    $resource2->taxrate = 0;
     }
-  	
+      	
   	$form[$first_day_month][$current_user->uid] = array (
       'spend' => array ( '#type' => 'textfield',
                          '#default_value' => $resource2->spend,
@@ -170,7 +180,8 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
   // This line is needed in order to keep the tree structure in form_state
   $form['#tree'] = TRUE;
   // Add redirection
-  $form['#redirect'] = 'finanzen/outflow/personal/' . $first_day_month;
+  //$form['#redirect'] = 'finanzen/outflow/personal/' . $first_day_month;
+  $form['#redirect'] = 'finanzen/' . $first_day_month;
   
   return $form; 
 
@@ -354,11 +365,19 @@ function finanzen_outflow_sonstiges ( $date = 0 )
   
   $total_amount = 0;
   while ($current_category = db_fetch_object($queryResult)) {
-    $query2 = "SELECT spend FROM finanzen_outflow_sonstiges_month 
+    $query2 = "SELECT nid, spend FROM finanzen_outflow_sonstiges_month 
     		   WHERE category_id=" . $current_category->nid . " AND date=" . $first_day_month;
     $queryResult2 = db_query ($query2);
     $resource2 = db_fetch_object ($queryResult2);
-    if (!$resource2) : $resource2->spend = 0; endif;
+    
+    if (!$resource2) {
+      $resource2->spend = 0;
+    }
+    elseif ($resource2->spend == 0) {
+    	// Si el gasto es 0 (tras una edicion) borramos en registro de la BD
+    	$query_delete = "DELETE FROM finanzen_outflow_sonstiges_month WHERE nid='" . $resource2->nid . "'";
+    	$query_deleteResult = db_query ( $query_delete );	    
+    }
   	
   	$total_amount += $resource2->spend;
   	
@@ -423,7 +442,8 @@ function _finanzen_outflow_sonstiges_navigator($date)
 function _finanzen_outflow_sonstiges_edit_month_navigator ( $date ) 
 {
   $content .= '<div class="navigator">';
-  $content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/' . $date . '"> &#8592; Back</a></div>';
+  //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/' . $date . '"> &#8592; Back</a></div>';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
   $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
@@ -433,6 +453,7 @@ function _finanzen_outflow_sonstiges_edit_month_navigator ( $date )
 
 function finanzen_outflow_sonstiges_edit_month ( $first_day_month )
 {
+  $content .= '<b><a style="float:right; margin-right: 50px;" href="/finanzen/outflow/sonstiges/categories">Administer Outflow sontsiges categories</a></b>';
   $content .= _finanzen_outflow_sonstiges_edit_month_navigator ($first_day_month);
   $content .= drupal_get_form ('finanzen_outflow_sonstiges_edit_month_form', $first_day_month);
   return $content;
@@ -483,7 +504,8 @@ function finanzen_outflow_sonstiges_edit_month_form ( $form, $first_day_month )
   // This line is needed in order to keep the tree structure in form_state
   $form['#tree'] = TRUE;
   // Add redirection
-  $form['#redirect'] = 'finanzen/outflow/sonstiges/' . $first_day_month;
+  //$form['#redirect'] = 'finanzen/outflow/sonstiges/' . $first_day_month;
+  $form['#redirect'] = 'finanzen/' . $first_day_month;
   
   return $form; 
 

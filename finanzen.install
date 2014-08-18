@@ -4,7 +4,7 @@ function finanzen_schema() {
   
   $schema = array();
   
-  $schema['finanzen_user_hours_projects'] = array(
+  $schema['finanzen_timesheet_worker_hours_projects'] = array(
     'description' => t('The number of hours that a user works on a project'),
     'fields' => array (
       'nid' => array (

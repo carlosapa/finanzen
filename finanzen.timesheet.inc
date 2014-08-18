@@ -141,7 +141,7 @@ function finanzen_timesheet_month( $first_day_month ) {
     $rowdata['date'] = date('d.m.Y, D', $day);
         
     foreach ($all_projects as $project) {
-      $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
+      $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_timesheet_worker_hours_projects} fuhp 
                 WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d";
       $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
       $resource = db_fetch_object ( $queryResult );
@@ -154,7 +154,7 @@ function finanzen_timesheet_month( $first_day_month ) {
       } 
       else {
         if ($resource->hours == 0) {
-          $query_delete = "DELETE FROM finanzen_user_hours_projects WHERE nid='" . $resource->nid . "'";
+          $query_delete = "DELETE FROM finanzen_timesheet_worker_hours_projects WHERE nid='" . $resource->nid . "'";
           $query_deleteResult = db_query ( $query_delete );
         }
         $link = '/timesheet/insert/' . $project[nid] . '/' . $day . '/' . $user->uid ;
@@ -235,7 +235,7 @@ function finanzen_timesheet_insert_form_submit ( $form, &$form_state )
   $project_id = $form_state['values']['project_id'];
   $hours_total = $hours + ((1/60) * $minutes);
   
-  $query = "INSERT into {finanzen_user_hours_projects} ( uid, date, hours, project_id ) 
+  $query = "INSERT into {finanzen_timesheet_worker_hours_projects} ( uid, date, hours, project_id ) 
             values ( %d, '%s', %f, %d )";
   $queryResult = db_query ( $query, $user_id, $date, $hours_total, $project_id );
   
@@ -265,7 +265,7 @@ function finanzen_timesheet_update ( $id, $date )
 
 function finanzen_timesheet_update_form ( $form, $id )
 { 
-  $query = "SELECT * FROM {finanzen_user_hours_projects} fuhp WHERE fuhp.nid=%d";
+  $query = "SELECT * FROM {finanzen_timesheet_worker_hours_projects} fuhp WHERE fuhp.nid=%d";
   $queryResult = db_query ( $query, $id );
   $resource = db_fetch_object ( $queryResult );
   
@@ -314,7 +314,7 @@ function finanzen_timesheet_update_form_submit ( $form, &$form_state )
   $minutes = $form_state['values']['minutes'];
   $hours_total = $hours + ((1/60) * $minutes);
   
-  $query = "UPDATE finanzen_user_hours_projects SET hours='" . $hours_total . "' 
+  $query = "UPDATE finanzen_timesheet_worker_hours_projects SET hours='" . $hours_total . "' 
             WHERE nid='" . $id . "'";
   $queryResult = db_query ( $query );
   
@@ -364,7 +364,7 @@ function finanzen_timesheet_edit_month_form ( $form, $first_day_month )
     $day = mktime(0,0,0,$month, $i, $year);
     
     foreach ($all_projects as $project) {  
-      $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_user_hours_projects} fuhp 
+      $query = "SELECT fuhp.nid, fuhp.hours FROM {finanzen_timesheet_worker_hours_projects} fuhp 
                 WHERE fuhp.date=%d AND fuhp.uid=%d AND fuhp.project_id=%d" ;
       $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
       $resource = db_fetch_object ( $queryResult );
@@ -498,14 +498,14 @@ function finanzen_timesheet_edit_month_form_submit ( $form, &$form_state )
       $reg_id = $form_state['values']['projects'][$date][$project_id]['id'];
       
       if ($reg_id != 0) { // DB Register already exists
-	    $query = "UPDATE finanzen_user_hours_projects SET hours='" . $hours_total . "' 
+	    $query = "UPDATE finanzen_timesheet_worker_hours_projects SET hours='" . $hours_total . "' 
                   WHERE nid='" . $reg_id . "'";
         $queryResult = db_query ( $query );   
       } 
       else { // DB Register does not exists
         if (($form_state['values']['projects'][$date][$project_id]['hours'] != 0) ||
             ($form_state['values']['projects'][$date][$project_id]['minutes']!= 0)) {
-	      $query = "INSERT into {finanzen_user_hours_projects} ( uid, date, hours, project_id )
+	      $query = "INSERT into {finanzen_timesheet_worker_hours_projects} ( uid, date, hours, project_id )
                     values ( %d, '%s', %f, %d )";
           $queryResult = db_query ( $query, $user->uid, $date, $hours_total, $project_id );   
         }

@@ -149,11 +149,11 @@ span.muted {
 .column_project,
 .column_person,
 .column_total {
-  width: 120px;
+  width: 170px;
 }
 
 .column_money {
-  width: 80px;
+  width: 90px;
 }
 
 .column_outflow_category {
@@ -175,12 +175,14 @@ table.timesheet-edit-month span.form-required{
 div.finanzen-title-table {
   clear: both;
   font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 5px;
 }
 
 table.finanzen {
   width: auto;
   clear: left;
-  min-width: 300px;
+  min-width: 320px;
 }
 
 input.form-text, select, textarea {
