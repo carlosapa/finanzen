@@ -62,15 +62,23 @@ div.navigator-date a { font-size: 10pt; }
 
 .bleed-left { margin-left: 5px; }
 
-.inflow_add select,
-.inflow_add input {	height: 25px; }
+.inflow-add select,
+.inflow-add input,
+.outflow-personal-extern-add select,
+.outflow-personal-extern-add input { height: 25px; }
 
-#finanzen-outflow-sonstiges-categories-add-form input.form-text { width: 360px; }
+#finanzen-outflow-sonstiges-categories-add-form input.form-text,
+#finanzen-outflow-personal-extern-list-add-form input.form-text { width: 360px; }
+
+#finanzen-outflow-personal-extern-add-form,
+#finanzen-inflow-add-form { margin-top: 20px; }
 
 /* End Fields in forms */
 
 table.outflow-sonstiges-categories,
-#finanzen-outflow-sonstiges-categories-add-form
+table.outflow-personal-extern-list,
+#finanzen-outflow-sonstiges-categories-add-form,
+#finanzen-outflow-personal-extern-list-add-form
 { width: 400px !important; }
 
 table.outflow-sonstiges,
@@ -78,9 +86,11 @@ table.outflow-personal
 { width: 300px !important; }
 
 table.inflow,
-#finanzen-inflow-add-form { width: 575px !important; }
+table.outflow-personal-extern,
+#finanzen-inflow-add-form,
+#finanzen-outflow-personal-extern-add-form { width: 575px !important; }
 
-#finanzen-inflow-add-form { margin-top: 10px; }
+#finanzen-outflow-personal-extern { margin-top: 10px; }
 
 #finanzen-insert-form .form-submit { margin-top: 5px; }
 
@@ -216,4 +226,12 @@ table.reports tr.not-empty td  {
 
 .green {
   color: #0a0 !important;
+}
+
+.ligth-yellow {
+  background-color: #FFFFE9;
+}
+
+.ligth-blue {
+  background-color: #E8FFFF;
 }

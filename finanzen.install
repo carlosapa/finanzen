@@ -72,6 +72,67 @@ function finanzen_schema() {
     'primary key' => array('nid'),
   );
   
+  $schema['finanzen_outflow_worker_extern'] = array(
+    'description' => t('Register for personal (extern)'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'name' => array (
+        'type' => 'text',
+        'not null' => TRUE,
+      ),       
+      'active' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+  
+  $schema['finanzen_outflow_worker_extern_month'] = array (
+    'description' => t('The money thet HB spends in personal extern monthly'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'extern_id' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'project_id' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),  
+      'date' => array (
+        'description' => 'The Unix timestamp when the node was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),       
+      'spend' => array (
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'taxrate' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  
   $schema['finanzen_outflow_sonstiges_month'] = array(
     'description' => t('The money thet HB spends in sonstiges monthly'),
     'fields' => array (
@@ -102,7 +163,7 @@ function finanzen_schema() {
   );
 
   $schema['finanzen_outflow_sonstiges_categories'] = array(
-    'description' => t('Categories to applay sonsitiges spends every month'),
+    'description' => t('Categories to apply sonsitiges spends every month'),
     'fields' => array (
       'nid' => array (
         'type' => 'serial',

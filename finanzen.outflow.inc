@@ -1,5 +1,9 @@
 <?php 
 
+/* ----------------------------------------------------------------------------- */
+/* ---------------------------- OUTFLOW PERSONAL ------------------------------- */
+/* ----------------------------------------------------------------------------- */
+
 /**
  *  Current month outflow personal
  */
@@ -68,8 +72,6 @@ function _finanzen_outflow_personal_navigator($date)
 { 
   $current_date = time ();
   $current_first_day_month = _finanzen_first_day_month($current_date);
-  // Init tool date -> 01.01.2014
-  $initial_time = "1388530800";
   
   $content .= '<div class="navigator">';
   
@@ -89,7 +91,7 @@ function _finanzen_outflow_personal_navigator($date)
   $content .= "</div>";
    
   $content .= '<div class="navigator-prev">';
-  if ($date > $initial_time) {
+  if ($date > ABSOLUTE_INITIAL_TIME) {
   	$content .= '<a title="Go to previous month" href="/finanzen/outflow/personal/' 
   	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
   }
@@ -109,7 +111,6 @@ function _finanzen_outflow_personal_navigator($date)
 function _finanzen_outflow_personal_edit_month_navigator ( $date ) 
 {
   $content .= '<div class="navigator">';
-  //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/' . $date . '"> &#8592; Back</a></div>';
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
   $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
@@ -180,11 +181,9 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
   // This line is needed in order to keep the tree structure in form_state
   $form['#tree'] = TRUE;
   // Add redirection
-  //$form['#redirect'] = 'finanzen/outflow/personal/' . $first_day_month;
   $form['#redirect'] = 'finanzen/' . $first_day_month;
   
   return $form; 
-
 }
 
 
@@ -252,6 +251,259 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
   }
   if ($queryResult)
       drupal_set_message("Changes saved correctly", "status");
+}
+
+/* ----------------------------------------------------------------------------- */
+/* ------------------------ OUTFLOW PERSONAL EXTERN ---------------------------- */
+/* ----------------------------------------------------------------------------- */
+
+function finanzen_outflow_personal_extern_list () {
+  
+  $header = array('name' => t("Name"), 'change_status' => t("Change status"));
+  
+  $query = "SELECT * FROM finanzen_outflow_worker_extern ORDER BY active DESC, name";
+  $queryResult = db_query ($query);
+    
+  while ($extern = db_fetch_object($queryResult)) {
+    if ($extern->active == 1) {
+	    $status_to_reach = 'deactivate';
+	    $id_status_to_reach = '0';
+    }
+    else {
+	    $status_to_reach = 'activate';
+	    $id_status_to_reach = '1';
+    }
+  	$rowdata = array( 'name' => $extern->name,
+  		    	      'change_status' => '<a href="/finanzen/outflow/personal/extern/change_status/' 
+  	                                 . $extern->nid . '/' . $id_status_to_reach . '">' . $status_to_reach . '</a>' );
+    
+    if ($extern->active == 1)
+      $row = array('data' => $rowdata);
+    else
+	  $row = array('data' => $rowdata, 'class' => "deactivated");
+  	
+  	$rows[] = $row;
+  }
+
+  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-personal-extern-list'));
+  
+  $content .= drupal_get_form ( 'finanzen_outflow_personal_extern_list_add_form' );
+    
+  return $content;
+}
+
+
+function finanzen_outflow_personal_extern_list_add_form ( $form )
+{
+  $form = array (
+    'name' => array (
+      '#type' => 'fieldset',
+      '#title' => t( 'Add new extern' ),
+      'name' => array ( '#type' => 'textfield',
+        				'#title' => 'Name extern worker',
+                        '#required' => TRUE,
+                        '#prefix' => '<div class="to-left">',
+                        '#suffix' => '</div>',),
+      'submit' => array ( '#type' => 'submit',  
+      					  '#value' => t('Save'),
+      					  '#prefix' => '<div class="clear-left bleed-left">',
+                          '#suffix' => '</div>',),
+    ),
+  );
+  
+  $form['#redirect'] = 'finanzen/outflow/personal/extern/list';
+  
+  return $form;
+}
+
+
+function finanzen_outflow_personal_extern_list_add_form_submit ( $form, &$form_state )
+{
+  $name = $form_state['values']['name'];
+  $query = "INSERT into {finanzen_outflow_worker_extern} ( name ) values ('%s')";
+  $queryResult = db_query ( $query, $name );
+  if ($queryResult)
+    drupal_set_message("Extern " . $name . " added correctly", "status");
+}
+
+
+function finanzen_outflow_personal_extern_change_status ( $id, $status ) 
+{
+  $query = "UPDATE finanzen_outflow_worker_extern SET active='" . $status . "' 
+            WHERE nid='" . $id . "'";
+  
+  if ($status == 1)
+    $message = "Extern activated";
+  else
+    $message = "Extern deactivated";
+    
+  if ($queryResult = db_query ( $query ))
+    drupal_set_message($message, 'status');
+  else
+	drupal_set_message("Extern worker status not changed, an error occurred.", 'error');
+	
+  drupal_goto('finanzen/outflow/personal/extern/list');
+}
+
+
+/* --------------------- Finanzen personal extern Outflow month summary --------------------------------- */
+
+/**
+ * Navigator
+ */
+function _finanzen_outflow_personal_extern_navigator ( $date ) 
+{
+  $content .= '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
+  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
+  $content .= '</div>';
+  
+  return $content;
+}
+
+function finanzen_outflow_personal_extern ( $date = 0 )
+{
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+  
+  $content .= '<b><a style="float:right; margin-right: 50px;" href="/finanzen/outflow/personal/extern/list">
+  			   Administer Outflow Personal Extern</a></b>';
+
+  
+  $content .= _finanzen_outflow_personal_extern_navigator($first_day_month);
+  
+  $header = array('extern_name' => t("Extern Name"), 
+  				  'project' => t("Project"), 
+  				  'spend' => t("Spend"), 
+  				  'taxrate' => t("Tax Rate"),
+  				  'edit' => t("Edit"), 
+  				  'delete' => t("Delete"));
+  
+  $query = "SELECT * FROM finanzen_outflow_worker_extern_month WHERE date=" . $first_day_month;
+  $queryResult = db_query ($query);
+
+  $total_amount = 0;
+  while ($current_invoice = db_fetch_object($queryResult)) {
+    $row = array( 'extern_name' => _finanzen_get_extern_name ($current_invoice->extern_id),
+	   		      'project' => _finanzen_get_project_code($current_invoice->project_id),
+	 			  'spend' => $current_invoice->spend . ' €',
+ 				  'taxrate' => $current_invoice->taxrate . '%',
+ 				  'edit' => '<a href="/finanzen/outflow/personal/extern/edit/' . 
+   				  			   $current_invoice->nid . '/' . $first_day_month . '">edit</a>',
+   				  'delete' => '<a href="/finanzen/outflow/personal/extern/delete/confirmation/' . 
+   				  			   $current_invoice->nid . '/' . $first_day_month . '">delete</a>' );
+	   				  
+	$rows[] = $row;
+	$total_amount += $current_invoice->spend;
+  }
+  
+  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-personal-extern'));
+  if (!$row)
+   	$content .= "<p syle='margin-bottom: 20px;'>Still no invoices this month</p>";
+  
+  $content .= '<p><b>Total outflow personal extern ' . date('F Y', $first_day_month) . '</b>: ' . 
+              number_format($total_amount, 2, ".", ".") . '€</p>';
+  
+  $content .= finanzen_outflow_personal_extern_add($first_day_month);
+  
+  return $content;
+}
+
+function finanzen_outflow_personal_extern_add ( $date )
+{
+  $query = "SELECT og.nid FROM og INNER JOIN node ON og.nid = node.nid"; // WHERE node.status=1";
+  $queryResult = db_query ($query);
+  while ($project_id = db_fetch_object($queryResult))
+  	$projects[$project_id->nid] = _finanzen_get_project_code($project_id->nid);
+
+  $query = "SELECT * FROM finanzen_outflow_worker_extern WHERE active=1";
+  $queryResult = db_query ($query);
+  while ($extern = db_fetch_object($queryResult))
+  	$externs[$extern->nid] = $extern->name;
+  	
+  if (empty($externs)) {
+	$content .=  "You cannot add external personal invoices before to load or activate external personal in the system. 
+	              Do it <a href='/finanzen/outflow/personal/extern/list'>here</a>.";
+  }
+  else {
+	  $content .= drupal_get_form ( 'finanzen_outflow_personal_extern_add_form', $date, $projects, $externs );
+  }
+  
+  return $content;
+}
+
+
+function finanzen_outflow_personal_extern_add_form ( $form, $date, $projects, $externs )
+{
+  $human_date = date('F Y', $date);
+
+  $form = array (
+	 'outflow_extern_add' => array (
+	   '#type' => 'fieldset',
+	   '#title' => t( 'Add new invoice for <b>' . $human_date . '</b>' ),
+	   'extern_id' => array ( '#type' => 'select',
+	                          '#title' => 'Extern Name',
+	                          '#options' => $externs,
+	                          '#required' => TRUE,
+	                          '#prefix' => '<div class="outflow-personal-extern-add to-left bleed-right">',
+	                          '#suffix' => '</div>',
+	                           ),        
+	   'project' => array ( '#type' => 'select',
+	                        '#title' => 'Project',
+	                        '#options' => $projects,
+	                        '#required' => TRUE,
+	                        '#prefix' => '<div class="outflow-personal-extern-add to-left bleed-right">',
+	                        '#suffix' => '</div>',
+	                      ),
+	   'spend' => array ( '#type' => 'textfield',
+	                      '#title' => 'Spend in €',
+	                      '#required' => TRUE,
+	                      '#prefix' => '<div class="outflow-personal-extern-add to-left bleed-right">',
+	                      '#suffix' => '</div>',
+	                    ),
+	   'taxrate' => array ( '#type' => 'select',
+	                        '#title' => 'Tax rate',
+	                        '#options' => array('0' => '0%', '7' => '7%', '19' => '19%'),
+	                        '#required' => TRUE,
+	                        '#prefix' => '<div class="outflow-personal-extern-add to-left ">',
+	                        '#suffix' => '</div>',
+	                      ),
+	   'date' => array ( '#type' => 'hidden', "#default_value" => $date ),
+	   'submit' => array ( '#type' => 'submit',  
+	   					   '#value' => t('Save'), 
+	      				   '#prefix' => '<div class="clear-left bleed-left">',
+	                       '#suffix' => '</div>',),
+	    ),
+  );
+	  
+  $form['#redirect'] = 'finanzen/outflow/personal/extern/' . _finanzen_first_day_month($date);
+	  
+  return $form;
+  
+}
+
+function finanzen_outflow_personal_extern_add_form_submit ( $form, &$form_state )
+{
+  $extern_id = $form_state['values']['extern_id'];
+  $project_id = $form_state['values']['project'];
+  $spend = $form_state['values']['spend'];
+  $taxrate = $form_state['values']['taxrate'];
+  $date = $form_state['values']['date'];
+  
+  $query = "INSERT into finanzen_outflow_worker_extern_month ( extern_id, project_id, spend, taxrate, date )
+            values ( '%s', %d, %f, %d, '%s' )";
+  $queryResult = db_query ( $query, $extern_id, $project_id, $spend, $taxrate, $date );
+}
+
+
+function finanzen_outflow_personal_extern_add_form_validate($form, &$form_state) 
+{
+  if (!is_numeric($form_state['values']['spend'])) {
+    form_set_error("spend", t('Spend: You must enter a numeric value.'));
+  }
 }
 
 /* ----------------------------------------------------------------------------- */
@@ -402,7 +654,7 @@ function _finanzen_outflow_sonstiges_navigator($date)
   $current_date = time ();
   $current_first_day_month = _finanzen_first_day_month($current_date);
   // Init tool date -> 01.01.2014
-  $initial_time = "1388530800";
+  //$initial_time = "1388530800";
   
   $content .= '<div class="navigator">';
   
@@ -422,7 +674,7 @@ function _finanzen_outflow_sonstiges_navigator($date)
   $content .= "</div>";
    
   $content .= '<div class="navigator-prev">';
-  if ($date > $initial_time) {
+  if ($date > ABSOLUTE_INITIAL_TIME) {
   	$content .= '<a title="Go to previous month" href="/finanzen/outflow/sonstiges/' 
   	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
   }

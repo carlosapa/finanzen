@@ -59,7 +59,7 @@ function _finanzen_inflow_navigator($date)
   $current_date = time ();
   $current_first_day_month = _finanzen_first_day_month($current_date);
   // Init tool date -> 01.01.2014
-  $initial_time = "1388530800";
+  //$initial_time = "1388530800";
   
   $content .= '<div class="navigator">';
   
@@ -78,7 +78,7 @@ function _finanzen_inflow_navigator($date)
   $content .= "</div>";
    
   $content .= '<div class="navigator-prev">';
-  if ($date > $initial_time) {
+  if ($date > ABSOLUTE_INITIAL_TIME) {
   	$content .= '<a title="Go to previous month" href="/finanzen/inflow/' 
   	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
   }
@@ -122,27 +122,27 @@ function finanzen_inflow_add_form ( $form, $date )
       'invoice_nr' => array ( '#type' => 'textfield',
                               '#title' => 'Invoice Nr',
                               '#required' => TRUE,
-                              '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                              '#prefix' => '<div class="inflow-add to-left bleed-right">',
                               '#suffix' => '</div>',
                             ),        
       'project' => array ( '#type' => 'select',
                            '#title' => 'Project',
                            '#options' => $projects,
                            '#required' => TRUE,
-                           '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                           '#prefix' => '<div class="inflow-add to-left bleed-right">',
                            '#suffix' => '</div>',
                          ),
       'spend' => array ( '#type' => 'textfield',
                          '#title' => 'Spend in €',
                          '#required' => TRUE,
-                         '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                         '#prefix' => '<div class="inflow-add to-left bleed-right">',
                          '#suffix' => '</div>',
                        ),
       'taxrate' => array ( '#type' => 'select',
                            '#title' => 'Tax rate',
                            '#options' => array('0' => '0%', '7' => '7%', '19' => '19%'),
                            '#required' => TRUE,
-                           '#prefix' => '<div class="inflow_add to-left ">',
+                           '#prefix' => '<div class="inflow-add to-left ">',
                            '#suffix' => '</div>',
                          ),
       'date' => array ( '#type' => 'hidden', "#default_value" => $date ),
@@ -215,7 +215,7 @@ function finanzen_inflow_edit_form ( $form, $id )
                               '#title' => 'Invoice Nr',
                               '#default_value' => $current_invoice->invoice_nr,
                               '#required' => TRUE,
-                              '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                              '#prefix' => '<div class="inflow-add to-left bleed-right">',
                               '#suffix' => '</div>',
                             ),        
       'project' => array ( '#type' => 'select',
@@ -223,14 +223,14 @@ function finanzen_inflow_edit_form ( $form, $id )
                            '#options' => $projects,
                            '#default_value' => $current_invoice->project_id,
                            '#required' => TRUE,
-                           '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                           '#prefix' => '<div class="inflow-add to-left bleed-right">',
                            '#suffix' => '</div>',
                          ),
       'spend' => array ( '#type' => 'textfield',
                          '#title' => 'Spend in €',
                          '#default_value' => $current_invoice->spend,
                          '#required' => TRUE,
-                         '#prefix' => '<div class="inflow_add to-left bleed-right">',
+                         '#prefix' => '<div class="inflow-add to-left bleed-right">',
                          '#suffix' => '</div>',
                        ),
       'taxrate' => array ( '#type' => 'select',
@@ -238,7 +238,7 @@ function finanzen_inflow_edit_form ( $form, $id )
                            '#options' => array('0' => '0%', '7' => '7%', '19' => '19%'),
                            '#default_value' => $current_invoice->taxrate,
                            '#required' => TRUE,
-                           '#prefix' => '<div class="inflow_add to-left ">',
+                           '#prefix' => '<div class="inflow-add to-left ">',
                            '#suffix' => '</div>',
                          ),
       'id' => array ( '#type' => 'hidden', "#default_value" => $current_invoice->nid ),
