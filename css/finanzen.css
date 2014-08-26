@@ -158,29 +158,16 @@ span.muted {
 
 .column_project,
 .column_person,
-.column_total {
-  width: 170px;
-}
+.column_total,
+.column_outflow_category { width: 200px; }
 
-.column_money {
-  width: 90px;
-}
+.column_money { width: 90px; }
 
-.column_outflow_category {
-  width: 270px;
-}
+.timesheet-edit-month .column_project { width: 150px; }
 
-.timesheet-edit-month .column_project {	
-  width: 150px;
-}
+.column_date { width: 140px; }
 
-.column_date {
-  width: 140px;
-}
-
-table.timesheet-edit-month span.form-required{
-  display:none;
-}
+table.timesheet-edit-month span.form-required{ display:none; }
 
 div.finanzen-title-table {
   clear: both;
@@ -228,10 +215,10 @@ table.reports tr.not-empty td  {
   color: #0a0 !important;
 }
 
-.ligth-yellow {
+.ligth-yellow { 
   background-color: #FFFFE9;
 }
 
-.ligth-blue {
-  background-color: #E8FFFF;
+.ligth-pink {
+  background-color: #FFEFFE;
 }
