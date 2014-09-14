@@ -1098,9 +1098,10 @@ function finanzen_reports_project_basis ($date, $project_id, &$total_studio_year
   $total_outflow_personal_extern_project_year = 0;
   $total_outflow_sonstiges_project_year = 0;
 	  
-  $content .= '<div class="finanzen-title-table">Project ' . $project_code . ' <a target="_blank" href="/finanzen/reports/project/' . 
-  			  $first_day_month . '/' . $project_id .'">(detail)</a></div>';
-  $header = array('concept' => array('data' => t("Concept"),'class' => 'column_person')) 
+  $link_to_project = '<a href="/finanzen/reports/project/' . $first_day_month . '/' . $project_id .'"><b>' . $project_code . '</b></a>';
+  //$content .= '<div class="finanzen-title-table"><a href="/finanzen/reports/project/' . 
+  	//		  $first_day_month . '/' . $project_id .'">' . $project_code . '</a></div>';
+  $header = array('concept' => array('data' => $link_to_project,'class' => 'column_person')) 
   			+ $months_curr_year + array('total' => array('data' => t("Total"),'class' => 'column_money'));
   $row_inflow = array('concept' => array('data' => "Inflow", 'class' => 'not-empty'));
   $row_outflow = array('concept' => array('data' => "Outflow", 'class' => 'not-empty'));

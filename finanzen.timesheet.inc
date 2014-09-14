@@ -104,7 +104,7 @@ function finanzen_timesheet() {
     $rows = array_reverse($rows);
   
     $content .= '<p class="month-report-title"><b>Monthly Report for ' . $user->name . '</b></p>';
-    $content .= theme_table($header, $rows, array('class' => 'finanzen'));
+    $content .= theme_table($header, $rows, array('class' => 'finanzen timesheet'));
   }
   
   return $content;
@@ -172,7 +172,7 @@ function finanzen_timesheet_month( $first_day_month ) {
     $rows[] = $row; 
   }
   
-  $content .= theme_table($header, $rows, array('class' => 'finanzen'));
+  $content .= theme_table($header, $rows, array('class' => 'finanzen timesheet'));
   
   return $content;
 }
@@ -455,7 +455,7 @@ function theme_finanzen_timesheet_edit_month_form_theme ( $form ) {
   }
   
   // This is where we create the table using theme()
-  $output .= theme('table', $header, $rows, array('class' => 'finanzen timesheet-edit-month'));
+  $output .= theme('table', $header, $rows, array('class' => 'finanzen timesheet timesheet-edit-month'));
   
   $output .= drupal_render($form);
   return $output;

@@ -222,3 +222,13 @@ table.reports tr.not-empty td  {
 .ligth-pink {
   background-color: #FFEFFE;
 }
+
+table.finanzen td,
+table.finanzen th {
+  padding: 2px 5px;
+}
+
+table.timesheet td,
+table.timesheet th {
+  padding: 5px;
+}
