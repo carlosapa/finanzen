@@ -819,7 +819,7 @@ function finanzen_outflow_sonstiges_edit_month_form_submit ( $form, &$form_state
     else { // DB Register does not exists
       if ($form_state['values'][$first_day_month][$category_id]['spend']!= 0) {
 	    $query = "INSERT into {finanzen_outflow_sonstiges_month} ( category_id, date, spend )
-                  values ( %d, '%s', %d )";
+                  values ( %d, '%s', %f )";
         $queryResult = db_query ( $query, $category_id, $first_day_month, $spend);   
       }
     }

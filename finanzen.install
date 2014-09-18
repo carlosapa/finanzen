@@ -262,7 +262,8 @@ function finanzen_install() {
 	'Wareneingang 19% Vorsteuer',
 	'Wareneingang 7% Vorsteuer',
 	'Wartungskosten Software, Hardware',
-	'Zeitschriften, Bücher'
+	'Zeitschriften, Bücher',
+	'Porto Deutsche Post'
 	);
 
   
