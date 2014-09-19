@@ -263,7 +263,8 @@ function finanzen_install() {
 	'Wareneingang 7% Vorsteuer',
 	'Wartungskosten Software, Hardware',
 	'Zeitschriften, Bücher',
-	'Porto Deutsche Post'
+	'Porto Deutsche Post',
+	'Fremdfahrzeuge mit 19% UST'
 	);
 
   

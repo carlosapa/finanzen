@@ -8,6 +8,9 @@
  *  Current month outflow personal
  */
 
+/* Comentada por OBSOLETA */
+
+/*
 function finanzen_outflow_personal ( $date = 0 )
 {
   if ($date == 0) {
@@ -64,10 +67,15 @@ function finanzen_outflow_personal ( $date = 0 )
 
   return $content;
 }
+*/
 
 /**
  * This function outputs a Finanzen Outflow month navigator
  */
+ 
+/* Comentada por OBSOLETA */
+
+/*
 function _finanzen_outflow_personal_navigator($date)
 { 
   $current_date = time ();
@@ -102,6 +110,7 @@ function _finanzen_outflow_personal_navigator($date)
    
   return $content;     
 }
+*/
 
 /* --------------------- Finanzen Personal Outflow Edit month --------------------------------- */
 
@@ -235,10 +244,16 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
   	$taxrate = $form_state['values'][$first_day_month][$user]['taxrate'];
   	$reg_id = $form_state['values'][$first_day_month][$user]['id'];
   	
-  	if ($reg_id != 0) { // DB Register already exists
-	    $query = "UPDATE finanzen_outflow_worker_month SET spend=" . $spend . ", taxrate=" . $taxrate . 
-                 " WHERE nid='" . $reg_id . "'";
-        $queryResult = db_query ( $query );
+  	if ($reg_id) { // DB Register already exists
+  		if ($spend == 0) {
+		    $query_delete = "DELETE FROM finanzen_outflow_worker_month WHERE nid='" . $reg_id . "'";
+		    $queryResult = db_query ( $query_delete );	   		
+	    }
+	    else { // $spend != 0
+		    $query = "UPDATE finanzen_outflow_worker_month SET spend=" . $spend . ", taxrate=" . $taxrate . 
+	                 " WHERE nid='" . $reg_id . "'";
+	        $queryResult = db_query ( $query );
+	    }
     } 
     else { // DB Register does not exists
       if (($form_state['values'][$first_day_month][$user]['spend']!= 0) ||
@@ -249,6 +264,7 @@ function finanzen_outflow_personal_edit_month_form_submit ( $form, &$form_state 
       }
     }
   }
+  
   if ($queryResult)
       drupal_set_message("Changes saved correctly", "status");
 }
@@ -599,6 +615,10 @@ function finanzen_outflow_sonstiges_categories_change_status ( $id, $status )
 /**
  *  Current month outflow sonstiges
  */
+ 
+ /* Comentada por OBSOLETA */
+ 
+ /*
 
 function finanzen_outflow_sonstiges ( $date = 0 )
 {
@@ -646,9 +666,15 @@ function finanzen_outflow_sonstiges ( $date = 0 )
   return $content;
 }
 
+*/
+
 /**
  * This function outputs a Finanzen Outflow month navigator
  */
+ 
+ /* Comentada por OBSOLETA */
+ 
+/* 
 function _finanzen_outflow_sonstiges_navigator($date)
 { 
   $current_date = time ();
@@ -685,6 +711,7 @@ function _finanzen_outflow_sonstiges_navigator($date)
    
   return $content;     
 }
+*/
 
 /* --------------------- Finanzen sonstiges Outflow Edit month --------------------------------- */
 
@@ -807,14 +834,19 @@ function finanzen_outflow_sonstiges_edit_month_form_submit ( $form, &$form_state
   $first_day_month = current(array_keys($form));
   
   foreach (element_children($form_state[$first_day_month]) as $category_id) {
-    // dsm($category_id);
   	$spend = $form_state['values'][$first_day_month][$category_id]['spend'];
   	$reg_id = $form_state['values'][$first_day_month][$category_id]['id'];
   	
-  	if ($reg_id != 0) { // DB Register already exists
-	    $query = "UPDATE finanzen_outflow_sonstiges_month SET spend=" . $spend . 
-                 " WHERE nid='" . $reg_id . "'";
-        $queryResult = db_query ( $query );
+  	if ($reg_id) { // DB Register already exists
+	    if ($spend == 0) {
+		    $query_delete = "DELETE FROM finanzen_outflow_sonstiges_month WHERE nid='" . $reg_id . "'";
+		    $queryResult = db_query ( $query_delete );	    
+	    }
+	    else { // $spend != 0
+		   	$query = "UPDATE finanzen_outflow_sonstiges_month SET spend='" . $spend . "' 
+		    		  WHERE nid='" . $reg_id . "'";
+	        $queryResult = db_query ( $query );
+	    }
     } 
     else { // DB Register does not exists
       if ($form_state['values'][$first_day_month][$category_id]['spend']!= 0) {
@@ -824,5 +856,8 @@ function finanzen_outflow_sonstiges_edit_month_form_submit ( $form, &$form_state
       }
     }
   }
+  
+  if ($queryResult)
+    drupal_set_message("Changes saved correctly", "status");
 }
 

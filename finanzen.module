@@ -87,7 +87,9 @@ function finanzen_menu() {
   ); 
   
   /* --- OUTFLOW PERSONAL -- */
-    
+  
+  /* Esta funcion ha quedado obsoleta, no se accede a ella desde ningun sitio en la herramienta */
+  /*
   $items['finanzen/outflow/personal'] = array(
     'title' => t('Finanzen outflow in Personal per month'),
     'page callback' => 'finanzen_outflow_personal',
@@ -95,6 +97,7 @@ function finanzen_menu() {
 	'type' => MENU_CALLBACK,
 	'file' => 'finanzen.outflow.inc',
   );
+  */
   
   $items['finanzen/outflow/personal/edit-month/%'] = array (
     'title' => t('Modify outflow in personal per month'),
@@ -116,6 +119,7 @@ function finanzen_menu() {
     'file' => 'finanzen.outflow.inc',
   ); 
   
+  /* Lista de trabajadores externos */
   $items['finanzen/outflow/personal/extern/list'] = array(
     'title' => t('Finanzen outflow personal extern register'),
     'page callback' => 'finanzen_outflow_personal_extern_list',
@@ -135,6 +139,8 @@ function finanzen_menu() {
   
   /* --- OUTFLOW SONSTIGES -- */
   
+  /* Esta funcion ha quedado obsoleta, no se accede a ella desde ningun sitio en la herramienta */
+  /*
   $items['finanzen/outflow/sonstiges'] = array(
     'title' => t('Finanzen outflow in sonstiges per month'),
     'page callback' => 'finanzen_outflow_sonstiges',
@@ -142,6 +148,7 @@ function finanzen_menu() {
 	'type' => MENU_CALLBACK,
 	'file' => 'finanzen.outflow.inc',
   );
+  */
   
   $items['finanzen/outflow/sonstiges/edit-month/%'] = array (
     'title' => t('Modify outflow in sonstiges per month'),
@@ -1261,7 +1268,7 @@ function finanzen_reports_project_detail ($date, $project_id) {
   while ($single_user = db_fetch_object($queryResult2))
 	 $relevant_workers[] = $single_user->uid;
   	  
-  $query3 = "SELECT users.uid FROM users
+  $query3 = "SELECT DISTINCT users.uid FROM users
   	  		 INNER JOIN users_roles ON users.uid = users_roles.uid
   	  		 INNER JOIN finanzen_outflow_worker_month ON finanzen_outflow_worker_month.uid = users.uid
   	  		 WHERE users_roles.rid=3 
@@ -1403,7 +1410,7 @@ function finanzen_reports_project_detail ($date, $project_id) {
 	  	  $total_outflow_personal_extern_project_year += $outflow->spend;
 	  }
 		  
-	  /* Almaceno en $row_outflow_personal_per_user los datos del trabajador concreto para este año, 
+	  /* Almaceno en $row_outflow_personal_extern_per_user los datos del trabajador concreto para este año, 
 	     siempre que el trabajador sea relevante para el proyecto  */
 	  foreach ($relevant_externs as $single_user) {
 		  if ($outflow_personal_extern_project_month_per_user[$single_user]) {
