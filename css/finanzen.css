@@ -27,7 +27,7 @@ div.navigator-back a { color: #666666; }
 div.navigator-date {
   float: left;
   padding: 5px 0 0 0px;
-  font-size: 16pt;
+  font-size: 14pt;
   color: #666666;
   margin:0 10px 5px 0;
 }
@@ -78,17 +78,16 @@ div.navigator-date a { font-size: 10pt; }
 table.outflow-sonstiges-categories,
 table.outflow-personal-extern-list,
 #finanzen-outflow-sonstiges-categories-add-form,
-#finanzen-outflow-personal-extern-list-add-form
-{ width: 400px !important; }
+#finanzen-outflow-personal-extern-list-add-form { width: 400px !important; }
 
 table.outflow-sonstiges,
-table.outflow-personal
-{ width: 300px !important; }
+table.outflow-personal { width: 300px !important; }
 
-table.inflow,
 table.outflow-personal-extern,
 #finanzen-inflow-add-form,
 #finanzen-outflow-personal-extern-add-form { width: 575px !important; }
+
+table.inflow { width: 600px !important; }
 
 #finanzen-outflow-personal-extern { margin-top: 10px; }
 
@@ -156,16 +155,14 @@ span.muted {
   background:url(../img/sprite-finanzen.png) -80px -460px no-repeat;
 }
 
-.column_project,
-.column_person,
-.column_total,
+.column_total { width: 110px; }
 .column_outflow_category { width: 200px; }
-
-.column_money { width: 90px; }
-
-.timesheet-edit-month .column_project { width: 150px; }
-
+.column_person  { width: 250px; }
+.column_project { width: 100px; }
+.column_money   { width: 90px; }
 .column_date { width: 140px; }
+.column_concept { width: 140px; }
+.timesheet-edit-month .column_project { width: 150px; }
 
 table.timesheet-edit-month span.form-required{ display:none; }
 
@@ -180,6 +177,26 @@ table.finanzen {
   width: auto;
   clear: left;
   min-width: 320px;
+}
+
+table.finanzen-klein {
+  width: auto;
+  clear: left;
+  min-width: 250px;
+}
+
+table.finanzen-klein td {
+  text-align: right;
+}
+
+div.div_finanzen_klein  {
+  float: left;
+  margin-right: 20px;
+  min-height: 160px;
+}
+
+div.row_finanzen_klein {
+  display: inline-block;
 }
 
 input.form-text, select, textarea {
@@ -210,10 +227,11 @@ table.reports tr.not-empty td  {
 .red {
   color: #d00 !important;
 }
-
+/*
 .green {
   color: #0a0 !important;
 }
+*/
 
 .ligth-yellow { 
   background-color: #FFFFE9;
@@ -226,9 +244,36 @@ table.reports tr.not-empty td  {
 table.finanzen td,
 table.finanzen th {
   padding: 2px 5px;
+  text-align: right
+}
+
+table.finanzen-klein td,
+table.finanzen-klein th {
+  padding: 0px 5px;
 }
 
 table.timesheet td,
 table.timesheet th {
   padding: 5px;
+}
+
+.light-grey {
+  background-color: #eee;
+}
+
+.grey {
+  background-color: #ddd;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.unbezahlt {
+  color: #48a !important;
+}
+
+.all-invoices .unbezahlt {
+  background-color: #e8cccc;
+  color: #000 !important;
 }

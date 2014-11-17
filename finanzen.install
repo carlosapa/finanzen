@@ -36,6 +36,10 @@ function finanzen_schema() {
       ),  
     ),
     'primary key' => array('nid'),
+    'unique keys' => array(
+      'uid_date_projectid' => array('uid', 'date', 'project_id'),
+    ),
+    
   );
   
   $schema['finanzen_outflow_worker_month'] = array(
@@ -184,7 +188,7 @@ function finanzen_schema() {
   );
   
   $schema['finanzen_inflow'] = array(
-    'description' => t('The money that HB get from custumers'),
+    'description' => t('The money that HB get from customers'),
     'fields' => array (
       'nid' => array (
         'type' => 'serial',
@@ -216,9 +220,46 @@ function finanzen_schema() {
         'not null' => TRUE,
         'default' => 0
       ),
+      'paid' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
     ),
     'primary key' => array('nid'),
   );
+  
+  $schema['finanzen_inflow_contract_project'] = array(
+    'description' => t('The money that HB should get from contracts with customers'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'project_id' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),       
+      'spend' => array (
+        'type' => 'float',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+      'category' => array ( 
+      /* 0 - vertrag, 1- Nachtrag 1, 2- Nachtrag 2, usw */
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+    'unique keys' => array(
+      'projectid_category' => array('project_id', 'category'),
+    ),
+  );
+
 
   return $schema;
 }
@@ -228,6 +269,7 @@ function finanzen_install() {
   // Create my tables.
   drupal_install_schema('finanzen');
   
+  /*
   $options_sonstiges = array(
 	'Bewirtungskosten',
 	'Bewirtungskosten ohne MwSt',
@@ -236,7 +278,7 @@ function finanzen_install() {
 	'Freie Mitarbeier (ohne Vorsteuer)',
 	'Freie Mitarbeier (ohne Vorsteuer) PK',
 	'Freie Mitarbeiter (19% Vorst.)',
-	'Fremdleistungen mit 19% PL',
+	'Fremdleistungen mit 19%',
 	'Fremdleistungen ohne UST',
 	'Fremdleistungen ohne Vorst PL',
 	'Gebühren',
@@ -264,14 +306,21 @@ function finanzen_install() {
 	'Wartungskosten Software, Hardware',
 	'Zeitschriften, Bücher',
 	'Porto Deutsche Post',
-	'Fremdfahrzeuge mit 19% UST'
+	'Fremdfahrzeuge mit 19% UST',
+	'Gas',
+	'Reinigungsservice Büroräumlichkeiten',
+	'Werbung',
+	'Beratungen',
+	'Beratungen mit 19 % Ust',
+	'Fremdfahrzeuge mit 19%'
 	);
 
   
-  foreach ($options_sonstiges as $option){
+  foreach ($options_sonstiges as $option) {
   	 $query = "INSERT into {finanzen_outflow_sonstiges_categories} ( name ) values ( '%s' )";
      $queryResult = db_query ($query, $option);
   }
+  */
 
 }
 

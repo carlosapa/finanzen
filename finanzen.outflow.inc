@@ -4,14 +4,7 @@
 /* ---------------------------- OUTFLOW PERSONAL ------------------------------- */
 /* ----------------------------------------------------------------------------- */
 
-/**
- *  Current month outflow personal
- */
-
-/* Comentada por OBSOLETA */
-
-/*
-function finanzen_outflow_personal ( $date = 0 )
+function finanzen_outflow_general ( $date = 0 )
 {
   if ($date == 0) {
     $current_date = time ();
@@ -19,98 +12,12 @@ function finanzen_outflow_personal ( $date = 0 )
   }
   else { $first_day_month = $date; }
   
-  $content .= _finanzen_outflow_personal_navigator($first_day_month);
-  
-  $header = array('name' => t("Name"), 'spend' => t("Spend"), 'taxrate' => t("Tax Rate") );
-  
-  //$query = "SELECT uid, name FROM users WHERE status=1 AND uid!=1";
-  $query = "SELECT users.uid, users.name FROM users 
-  			LEFT JOIN users_roles ON users.uid=users_roles.uid
-  			WHERE users.uid!=1 AND users.uid!=0
-  			ORDER BY users_roles.rid DESC, users.name";
-  
-  $queryResult = db_query ($query);
-  
-  $total_amount = 0;  
-  
-  while ($current_user = db_fetch_object($queryResult)) {
-    
-    $query2 = "SELECT nid, spend, taxrate FROM finanzen_outflow_worker_month 
-    		   WHERE uid=" . $current_user->uid . " AND date=" . $first_day_month;
-    $queryResult2 = db_query ($query2);
-    $resource2 = db_fetch_object ($queryResult2);
-    
-    if (!$resource2) {
-      $resource2->spend = 0;
-      $resource2->taxrate = 0;
-    }
-    elseif ($resource2->spend == 0) {
-    	// Si el gasto es 0 (tras una edicion) borramos en registro de la BD
-    	$query_delete = "DELETE FROM finanzen_outflow_worker_month WHERE nid='" . $resource2->nid . "'";
-    	$query_deleteResult = db_query ( $query_delete );	 
-    	$resource2->taxrate = 0;   
-    }
-        
-  	$total_amount += $resource2->spend;
-  	
-  	$row = array( 'name' => $current_user->name,
-  				  'spend' => $resource2->spend . ' €',
-   				  'taxrate' => $resource2->taxrate . '%' );
-  	$rows[] = $row;
-  	
-  }
-  
-  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-personal'));
-  
-  $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
-              number_format($total_amount, 2, ".", ".") . '€</p>';
+  //$content .= '<div class="finanzen-title-table">Jahresübersicht Personalkosten</div>';
+  $content .= finanzen_reports_outflow_personal($date);
+  $content .= finanzen_reports_outflow_personal_extern($date);
 
   return $content;
 }
-*/
-
-/**
- * This function outputs a Finanzen Outflow month navigator
- */
- 
-/* Comentada por OBSOLETA */
-
-/*
-function _finanzen_outflow_personal_navigator($date)
-{ 
-  $current_date = time ();
-  $current_first_day_month = _finanzen_first_day_month($current_date);
-  
-  $content .= '<div class="navigator">';
-  
-  $content .= '<div class="navigator-date">';
-  $content .= date('F Y', $date);
-  $content .= '  <a href="/finanzen/outflow/personal/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
-              . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit</a>';
-  $content .= "</div>";
-
-  
-  $content .= '<div class="navigator-next">';
-  if ($date < $current_first_day_month) {
-	$content .= '<a title="Go to next month" href="/finanzen/outflow/personal/' 
-	            . _finanzen_get_first_day_next_month($date) . '"> &#8811; </a>';
-  }
-  else { $content .= '<span class="muted"> &#8811; </span>'; }
-  $content .= "</div>";
-   
-  $content .= '<div class="navigator-prev">';
-  if ($date > ABSOLUTE_INITIAL_TIME) {
-  	$content .= '<a title="Go to previous month" href="/finanzen/outflow/personal/' 
-  	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
-  }
-  else { $content .= '<span class="muted"> &#8810; </span>'; }
-  $content .= "</div>";
-  
-  $content .= "</div>"; // class="navigator"
-   
-  return $content;     
-}
-*/
 
 /* --------------------- Finanzen Personal Outflow Edit month --------------------------------- */
 
@@ -169,7 +76,7 @@ function finanzen_outflow_personal_edit_month_form ( $form, $first_day_month )
                          '#required' => TRUE,
                          '#prefix' => '<div class="outflow-personal-spend-field ' . $css_class . '">',
                          '#suffix' => '€</div>',       
-                         ),
+                       ),
       'taxrate' => array ( '#type' => 'select',
                            '#default_value' => $resource2->taxrate,
                            '#options' => array('0' => '0%', '7' => '7%', '19' => '19%'),
@@ -421,7 +328,7 @@ function finanzen_outflow_personal_extern ( $date = 0 )
    	$content .= "<p syle='margin-bottom: 20px;'>Still no invoices this month</p>";
   
   $content .= '<p><b>Total outflow personal extern ' . date('F Y', $first_day_month) . '</b>: ' . 
-              number_format($total_amount, 2, ".", ".") . '€</p>';
+              _finanzen_format_number($total_amount) . '</p>';
   
   $content .= finanzen_outflow_personal_extern_add($first_day_month);
   
@@ -612,106 +519,6 @@ function finanzen_outflow_sonstiges_categories_change_status ( $id, $status )
   drupal_goto('finanzen/outflow/sonstiges/categories');
 }
 
-/**
- *  Current month outflow sonstiges
- */
- 
- /* Comentada por OBSOLETA */
- 
- /*
-
-function finanzen_outflow_sonstiges ( $date = 0 )
-{
-  if ($date == 0) {
-    $current_date = time ();
-    $first_day_month = _finanzen_first_day_month($current_date);
-  }
-  else { $first_day_month = $date; }
-  
-  $content .= _finanzen_outflow_sonstiges_navigator($first_day_month);
-  
-  $header = array('name' => t("Name"), 'spend' => t("Spend"));
-  
-  $query = "SELECT * FROM finanzen_outflow_sonstiges_categories WHERE active=1";
-  $queryResult = db_query ($query);
-  
-  $total_amount = 0;
-  while ($current_category = db_fetch_object($queryResult)) {
-    $query2 = "SELECT nid, spend FROM finanzen_outflow_sonstiges_month 
-    		   WHERE category_id=" . $current_category->nid . " AND date=" . $first_day_month;
-    $queryResult2 = db_query ($query2);
-    $resource2 = db_fetch_object ($queryResult2);
-    
-    if (!$resource2) {
-      $resource2->spend = 0;
-    }
-    elseif ($resource2->spend == 0) {
-    	// Si el gasto es 0 (tras una edicion) borramos en registro de la BD
-    	$query_delete = "DELETE FROM finanzen_outflow_sonstiges_month WHERE nid='" . $resource2->nid . "'";
-    	$query_deleteResult = db_query ( $query_delete );	    
-    }
-  	
-  	$total_amount += $resource2->spend;
-  	
-  	$row = array( 'name' => $current_category->name,
-  				  'spend' => $resource2->spend . ' €');
-  	$rows[] = $row;
-  }
-  
-  $content .= theme_table($header, $rows , array('class' => 'finanzen outflow-sonstiges'));
-  
-  $content .= '<p><b>Total outflow personal ' . date('F Y', $first_day_month) . '</b>: ' . 
-              number_format($total_amount, 2, ".", ".") . '€</p>';
-              
-  return $content;
-}
-
-*/
-
-/**
- * This function outputs a Finanzen Outflow month navigator
- */
- 
- /* Comentada por OBSOLETA */
- 
-/* 
-function _finanzen_outflow_sonstiges_navigator($date)
-{ 
-  $current_date = time ();
-  $current_first_day_month = _finanzen_first_day_month($current_date);
-  // Init tool date -> 01.01.2014
-  //$initial_time = "1388530800";
-  
-  $content .= '<div class="navigator">';
-  
-  $content .= '<div class="navigator-date">';
-  $content .= date('F Y', $date);
-  $content .= '  <a href="/finanzen/outflow/sonstiges/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
-              . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit</a>';
-  $content .= "</div>";
-
-  
-  $content .= '<div class="navigator-next">';
-  if ($date < $current_first_day_month) {
-	$content .= '<a title="Go to next month" href="/finanzen/outflow/sonstiges/' 
-	            . _finanzen_get_first_day_next_month($date) . '"> &#8811; </a>';
-  }
-  else { $content .= '<span class="muted"> &#8811; </span>'; }
-  $content .= "</div>";
-   
-  $content .= '<div class="navigator-prev">';
-  if ($date > ABSOLUTE_INITIAL_TIME) {
-  	$content .= '<a title="Go to previous month" href="/finanzen/outflow/sonstiges/' 
-  	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
-  }
-  else { $content .= '<span class="muted"> &#8810; </span>'; }
-  $content .= "</div>";
-  
-  $content .= "</div>"; // class="navigator"
-   
-  return $content;     
-}
-*/
 
 /* --------------------- Finanzen sonstiges Outflow Edit month --------------------------------- */
 
