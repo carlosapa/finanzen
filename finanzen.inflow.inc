@@ -1,6 +1,253 @@
 <?php 
 
 /**
+ * Jahresübersicht Ausgangsrechnungen
+ */
+function finanzen_inflow_general ( $date = 0 )
+{
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+
+  $content .= _finanzen_inflow_general_navigator($first_day_month);
+  $content .= finanzen_reports_inflow($first_day_month);
+  
+  return $content;
+}
+
+/**
+ * This function outputs a Inflow month navigator
+ */
+function _finanzen_inflow_general_navigator($date)
+{ 
+  $content .= '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-date">Jahresübersicht Ausgangsrechnungen ' . date('Y', $date) . "</div>";
+  
+  $content .= '<div class="navigator-next">';
+  
+  $query = "SELECT date FROM finanzen_inflow ORDER BY date DESC LIMIT 1";
+  $queryResult = db_query ($query);
+  
+  if (db_affected_rows()== 1) {
+  	$invoice = db_fetch_object($queryResult);
+  	$last_invoice_date = $invoice->date;
+  }
+  
+  if ($last_invoice_date >= _finanzen_get_first_day_next_year($date)) {
+    $content .= '<a title="Go to next year" href="/finanzen/inflow/general/' 
+	            . _finanzen_get_first_day_next_year($date) . '"> &#8811; </a>';
+  }
+  else 
+    $content .= '<span class="muted"> &#8811; </span>';
+    
+  $content .= "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > ABSOLUTE_INITIAL_TIME) {
+  	$content .= '<a title="Go to previous year" href="/finanzen/inflow/general/' 
+  	            . _finanzen_get_first_day_previous_year($date) . '"> &#8810; </a>';
+  }
+  else
+    $content .= '<span class="muted"> &#8810; </span>';
+  
+  $content .= "</div>";
+  
+  $content .= "</div>"; // class="navigator"
+   
+  return $content;     
+}
+
+
+function finanzen_reports_inflow ( $date = 0 ) {
+  
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+  
+  $last_row = array();
+  $paid_invoices_row = array();
+  $unpaid_invoices_row = array();
+  $total_all_projects_year = 0;
+  $total_all_projects_year_unpaid = 0;
+  $total_all_projects_year_paid = 0;
+  
+  $months_curr_year = _finanzen_list_months_year ($first_day_month, 3);
+  $header = array('vertrag' => array('data' => t("Vertrag"),'class' => 'bold column_money')) + 
+    	    //array('vergangenerg' => array('data' => t("Vergangene Rg."),'class' => 'column_money')) + 
+  			array('zpgesamt' => array('data' => t("ZP Gesamt"),'class' => 'bold column_money')) + 
+  			array('project' => array('data' => t("Projekt"),'class' => 'column_project')) + 
+            $months_curr_year + array('total' => array('data' => t("Gesamt"),
+                                                       'class' => 'bold column_money'));
+  
+  $desplazamiento_tabla['vertrag']= array('data' => "",'class' => 'white');
+  //$desplazamiento_tabla['vergangenerg']= array('data' => "",'class' => 'white');
+  $desplazamiento_tabla['zpgesamt']= array('data' => "",'class' => 'white');
+                    
+  $query = "SELECT DISTINCT project_id FROM finanzen_inflow
+    		INNER JOIN content_type_group ON content_type_group.nid = finanzen_inflow.project_id
+  			WHERE date>=" . _finanzen_first_day_year($first_day_month) . " 
+  			AND date<" . _finanzen_get_first_day_next_year($first_day_month) . "
+  			ORDER BY content_type_group.field_project_code_value";
+  $queryResult = db_query ( $query );
+  
+  while ($project = db_fetch_object($queryResult)){
+  
+  	$row = array();
+  	
+  	$query3 = "SELECT * FROM finanzen_inflow_contract_project WHERE project_id=" . $project->project_id;
+  	$queryResult3 = db_query($query3);
+  	$gesamt_vertrag_nachtraege_proj = 0;
+  	if (db_affected_rows() > 0) {
+	    while ($outflow = db_fetch_object($queryResult3)) {
+	      $gesamt_vertrag_nachtraege_proj += $outflow->spend;
+	    }
+    }  	
+    $row['vertrag']= array('data' => _finanzen_format_number($gesamt_vertrag_nachtraege_proj), 'class' => 'bold not-empty');
+    
+    $query4 = "SELECT * FROM finanzen_inflow WHERE project_id=" . $project->project_id;
+  	$queryResult4 = db_query($query4);
+  	$gesamt_inflow_proj = 0;
+  	//$past_inflow_proj = 0;
+  	if (db_affected_rows() > 0) {
+	    while ($outflow = db_fetch_object($queryResult4)) { 
+	      $gesamt_inflow_proj += $outflow->spend;
+	      //if ($outflow->date < _finanzen_first_day_year($date))
+	      //  $past_inflow_proj += $outflow->spend;
+	    }
+    }
+    
+    //$row['vergangenerg']= array('data' => _finanzen_format_number($past_inflow_proj), 'class' => 'not-empty');
+    
+    if ($gesamt_vertrag_nachtraege_proj == $gesamt_inflow_proj)
+      $row['zpgesamt']= array('data' => _finanzen_format_number($gesamt_inflow_proj), 'class' => 'bold not-empty');
+    else
+      $row['zpgesamt']= array('data' => _finanzen_format_number($gesamt_inflow_proj), 'class' => 'error bold not-empty'); 
+    
+    $row['project']= array('data' => _finanzen_link_to_project($project->project_id, $first_day_month),  
+                                    'class' => 'not-empty');
+    $last_row['name'] = "Gesamt";
+    $unpaid_invoices_row['name'] = "Offene Rg.";
+    $paid_invoices_row['name'] = "Eingezahlte Rg.";
+    
+    $total_project_year = 0;
+    	
+	foreach ($months_curr_year as $month_name => $month_data ) {
+		
+		$total_project_month = 0;
+		$total_project_month_paid = 0;
+		$total_project_month_unpaid = 0;
+		
+		if (empty($last_row[$month_name])): $last_row[$month_name] = 0; endif;
+		if (empty($unpaid_invoices_row[$month_name])): $unpaid_invoices_row[$month_name] = 0; endif;
+		if (empty($paid_invoices_row[$month_name])): $paid_invoices_row[$month_name] = 0; endif;
+		
+		$query2 = "SELECT * from finanzen_inflow
+				   WHERE project_id=" . $project->project_id . " 
+				   AND date>=" . $month_data['date'] . "
+				   AND date<" . _finanzen_get_first_day_next_month($month_data['date']);
+		$queryResult2 = db_query($query2);
+		
+		$all_month_invoices_paid = TRUE;
+		while ($outflow = db_fetch_object($queryResult2)) {
+			$total_project_month += $outflow->spend;
+			$last_row[$month_name] += $outflow->spend;
+			
+			if ($outflow->paid) {
+			  $paid_invoices_row[$month_name] += $outflow->spend;
+			  $total_project_month_paid += $outflow->spend;
+			}
+			else {
+			  $unpaid_invoices_row[$month_name] += $outflow->spend;
+			  $total_project_month_unpaid += $outflow->spend;
+			}
+			
+			$total_project_year += $outflow->spend;
+			$all_month_invoices_paid = ($all_month_invoices_paid && $outflow->paid);
+		}
+		
+		if ($total_project_month > 0) {
+  		  if ($month_data['date'] > _finanzen_first_day_month(time()))
+  		    $row[] = array('data' => _finanzen_format_number($total_project_month), 'class' => 'not-empty prognose');
+  		  else {
+	  		  if (($total_project_month_paid > 0) && ($total_project_month_unpaid > 0)) {
+		  		   $row[] = array('data' => _finanzen_format_number($total_project_month_paid) . '</br>' . 
+		  		                            '<span class=unbezahlt>' . _finanzen_format_number($total_project_month_unpaid) .'</span>', 								  'class' => 'not-empty');
+	  		  }
+	  		  elseif ($total_project_month_paid > 0)
+	  		    $row[] = array('data' => _finanzen_format_number($total_project_month_paid), 'class' => 'not-empty');
+	  		  else
+	  		    $row[] = array('data' => _finanzen_format_number($total_project_month_unpaid), 'class' => 'not-empty unbezahlt'); 
+	  		  
+  		  }
+
+  		  
+  		  /*
+  		  if ($all_month_invoices_paid)
+  		    $row[] = array('data' => _finanzen_format_number($total_project_month), 'class' => 'not-empty');
+  		  elseif ($month_data['date'] <= _finanzen_first_day_month(time()))
+  		    $row[] = array('data' => _finanzen_format_number($total_project_month), 'class' => 'not-empty unbezahlt');
+  		  else 
+  		    $row[] = array('data' => _finanzen_format_number($total_project_month), 'class' => 'not-empty prognose');
+  		  */
+  		}
+  		else
+  		  $row[] = _finanzen_format_number(0);
+	}
+	
+	$row['total'] = array('data' => _finanzen_format_number($total_project_year), 'class' => 'not-empty bold');
+	$rows[] = $row;
+	$total_all_projects_year += $total_project_year;
+
+  }
+  
+  if ($unpaid_invoices_row) {
+	  foreach ($unpaid_invoices_row as $month_name => $month_data){
+	     if ($month_name != "name") {
+			$unpaid_invoices_row[$month_name] = _finanzen_format_number($month_data);
+			$total_all_projects_year_unpaid += $month_data;
+		 }
+	  }
+	  $unpaid_invoices_row['total'] = _finanzen_format_number($total_all_projects_year_unpaid);
+  }
+      
+  if ($paid_invoices_row) {  
+	  foreach ($paid_invoices_row as $month_name => $month_data){
+	     if ($month_name != "name") {
+			$paid_invoices_row[$month_name] =_finanzen_format_number($month_data);
+			$total_all_projects_year_paid += $month_data;
+		 }
+	  }
+	  $paid_invoices_row['total'] =_finanzen_format_number($total_all_projects_year_paid);
+  }
+  
+  if ($last_row) {
+	  foreach ($last_row as $month_name => $month_data){
+	     if ($month_name != "name")
+			$last_row[$month_name] = _finanzen_format_number($month_data);
+	  }
+	  $last_row['total'] = _finanzen_format_number($total_all_projects_year);
+  }
+  
+  $unpaid_invoices_row = $desplazamiento_tabla + $unpaid_invoices_row;
+  $paid_invoices_row = $desplazamiento_tabla + $paid_invoices_row;
+  $last_row = $desplazamiento_tabla + $last_row;
+  
+  $rows[] = array('data' => $unpaid_invoices_row, 'class' => 'bold light-grey not-empty');
+  $rows[] = array('data' => $paid_invoices_row, 'class' => 'bold light-grey not-empty'); 
+  $rows[] = array('data' => $last_row, 'class' => 'bold grey not-empty');
+  
+  $content .= theme_table($header, $rows, array('class' => 'finanzen reports inflow-general'));
+
+  return $content;
+}
+
+
+/**
  *  Current month outflow personal
  */
 
@@ -79,12 +326,9 @@ function finanzen_inflow ( $date = 0 )
  */
 function _finanzen_inflow_navigator($date)
 { 
-  //$current_date = time ();
-  //$current_first_day_month = _finanzen_first_day_month($current_date);
-  
   $content .= '<div class="navigator">';
   
-  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-back"><a href="/finanzen/inflow/general/' . $date . '"> &#8592; zurück</a></div>';
   
   $content .= '<div class="navigator-date">';
   $content .= date('F Y', $date);
@@ -112,8 +356,16 @@ function _finanzen_inflow_navigator($date)
 }
 
 
-function finanzen_inflow_all ()
-{  
+function finanzen_inflow_all ( $date = 0 )
+{ 
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_year = _finanzen_first_day_year($current_date);
+  }
+  else { 
+    $first_day_year = _finanzen_first_day_year($date); 
+  }
+  
   $header = array('invoice_nr' => t("Rechnung Nr."), 
   				  'project' => t("Projekt"),
   				  'date'  => t("Datum"),
@@ -123,17 +375,29 @@ function finanzen_inflow_all ()
   				  'delete' => t("Delete"),
   				  'status' =>t("Status"));
   
-  $query = "SELECT * FROM finanzen_inflow ORDER BY date DESC";
+  $query = "SELECT * FROM finanzen_inflow 
+            WHERE date>=" . $first_day_year . ' AND date<' . _finanzen_get_first_day_next_year($first_day_year) . " 
+            ORDER BY date DESC";
   $queryResult = db_query ($query);
 
   $total_amount = 0;
+  $total_paid = 0;
+  $total_unpaid = 0;
+  
   while ($current_invoice = db_fetch_object($queryResult)) {
   
-    if ($current_invoice->paid == 0)
+    if ($current_invoice->paid == 0) {
       $status_paid = "unbezahlt";
-    else 
+      $total_unpaid += $current_invoice->spend;
+    }
+    else { 
       $status_paid = "bezahlt";
-      
+      $total_paid += $current_invoice->spend;
+    }
+    
+    $total_amount += $current_invoice->spend;
+    
+    
     $status = $status_paid . ' <a href="/finanzen/inflow/change_status/' . $current_invoice->nid . 
                              '?' . drupal_get_destination() . '">change</a>';
 
@@ -153,12 +417,64 @@ function finanzen_inflow_all ()
 	$rows[] = $row;
   }
   
+  /* --- RESUMEN DEL AÑO --- */
+  $rowdata2 = array('concept' => "Gestellte Rechnungen",'betrag' => _finanzen_format_number($total_amount));
+  $rows2[] = array('data' => $rowdata2, 'class' => "not-empty light-grey");
+  $rowdata2 = array('concept' => "Bezahlte Rechnungen",'betrag' => _finanzen_format_number($total_paid));
+  $rows2[] = array('data' => $rowdata2, 'class' => "not-empty light-grey");
+  $rowdata2 = array('concept' => "Unbezahlte Rechnungen",'betrag' => _finanzen_format_number($total_unpaid));
+  $rows2[] = array('data' => $rowdata2, 'class' => "not-empty light-grey");
+  
+  $content .= theme_table(array(), $rows2, array('class' => 'finanzen-klein reports'));
+  
+  $content .= _finanzen_inflow_all_navigator($first_day_year);
+  
   $content .= theme_table($header, $rows , array('class' => 'finanzen inflow all-invoices'));
+  
   if (!$row)
    	$content .= "<p syle='margin-bottom: 20px;'>Still no invoices this month</p>";
   
   return $content;
 }
+
+function _finanzen_inflow_all_navigator($date)
+{ 
+  $content .= '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-date">Zusammenstellung der Rechnungen ' . _finanzen_get_year($date) . '</div>';
+  
+  $content .= '<div class="navigator-next">';
+  
+  $query = "SELECT date FROM finanzen_inflow ORDER BY date DESC LIMIT 1";
+  $queryResult = db_query ($query);
+  
+  if (db_affected_rows()== 1) {
+  	$invoice = db_fetch_object($queryResult);
+  	$last_invoice_date = $invoice->date;
+  }
+  
+  if ($last_invoice_date >= _finanzen_get_first_day_next_year($date)) {
+    $content .= '<a title="Go to next year" href="/finanzen/inflow/all/' 
+	            . _finanzen_get_first_day_next_year($date) . '"> &#8811; </a>';
+  }
+  else 
+    $content .= '<span class="muted"> &#8811; </span>';
+    
+  $content .= "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > ABSOLUTE_INITIAL_TIME) {
+  	$content .= '<a title="Go to previous month" href="/finanzen/inflow/all/' 
+  	            . _finanzen_get_first_day_previous_month($date) . '"> &#8810; </a>';
+  }
+  else { $content .= '<span class="muted"> &#8810; </span>'; }
+  $content .= "</div>";
+
+  $content .= "</div>";
+     
+  return $content;     
+}
+
 
 function finanzen_inflow_change_payment_status($invoice_id) {
   
@@ -199,10 +515,14 @@ function finanzen_inflow_add_form ( $form, $date )
 {
   $human_date = date('F Y', $date);
   
+  //$query = "SELECT og.nid FROM og 
+  //          INNER JOIN node
+  //	  	  ON og.nid = node.nid";
+  //          WHERE node.status=1";
+            
   $query = "SELECT og.nid FROM og 
-            INNER JOIN node
-			ON og.nid = node.nid";
-            //WHERE node.status=1";
+    		INNER JOIN content_type_group ON content_type_group.nid = og.nid
+  			ORDER BY content_type_group.field_project_code_value";
   $queryResult = db_query ($query);
   
   while ($project_id = db_fetch_object($queryResult))
@@ -293,10 +613,14 @@ function finanzen_inflow_edit_form ( $form, $id )
   $dateformat = 'd.m.Y';
   //$human_date = date($dateformat, $current_invoice->date);
   
+  //$query2 = "SELECT og.nid FROM og 
+  //           INNER JOIN node
+  //		   ON og.nid = node.nid"; 
+  //           WHERE node.status=1";
+  
   $query2 = "SELECT og.nid FROM og 
-             INNER JOIN node
-			 ON og.nid = node.nid"; 
-             //WHERE node.status=1";
+    		 INNER JOIN content_type_group ON content_type_group.nid = og.nid
+  			 ORDER BY content_type_group.field_project_code_value";           
   $queryResult2 = db_query ($query2);
   
   while ($project_id = db_fetch_object($queryResult2))

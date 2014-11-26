@@ -162,9 +162,12 @@ span.muted {
 .column_money   { width: 90px; }
 .column_date { width: 140px; }
 .column_concept { width: 140px; }
-.timesheet-edit-month .column_project { width: 150px; }
 
-table.timesheet-edit-month span.form-required{ display:none; }
+/* Anchos particulares por tablas */
+.timesheet-edit-month .column_project { width: 150px; }
+.inflow-general .column_project { width: 130px; }
+
+table.timesheet-edit-month span.form-required { display:none; }
 
 div.finanzen-title-table {
   clear: both;
@@ -182,7 +185,7 @@ table.finanzen {
 table.finanzen-klein {
   width: auto;
   clear: left;
-  min-width: 250px;
+  min-width: 270px;
 }
 
 table.finanzen-klein td {
@@ -212,7 +215,6 @@ input.error {
   border-color: #f00 !important;
 }
 
-
 /* Celdas sin info relevante */
 table.reports td { 
   color: #999;
@@ -224,22 +226,17 @@ table.reports tr.not-empty td  {
   color: #000;
 }
 
-.red {
-  color: #d00 !important;
-}
-/*
-.green {
-  color: #0a0 !important;
-}
-*/
-
-.ligth-yellow { 
-  background-color: #FFFFE9;
-}
-
-.ligth-pink {
-  background-color: #FFEFFE;
-}
+.red { color: #d00 !important; }
+.black { color: #000 !important; }
+.grey { background-color: #ddd; }
+.light-grey { background-color: #eee; }
+.unbezahlt { color: #d00 !important; }
+.prognose { color: #48a !important; }
+.white { background-color: #fff; }
+.error { background-color: #e8cccc; }
+/* .green { color: #0a0 !important; }
+.ligth-yellow { background-color: #FFFFE9; }
+.ligth-pink { background-color: #FFEFFE; } */
 
 table.finanzen td,
 table.finanzen th {
@@ -257,23 +254,25 @@ table.timesheet th {
   padding: 5px;
 }
 
-.light-grey {
-  background-color: #eee;
-}
-
-.grey {
-  background-color: #ddd;
-}
-
 .bold {
   font-weight: bold;
-}
-
-.unbezahlt {
-  color: #48a !important;
 }
 
 .all-invoices .unbezahlt {
   background-color: #e8cccc;
   color: #000 !important;
+}
+
+tr.empty-row td {
+  border-left: 1px solid white;
+  border-right: 1px solid white;
+}
+
+tr.empty-row {
+  height: 7px;
+}
+
+.dropdown-blocks #block-menu-menu-menu-finanzen li a, 
+.dropdown-blocks #block-menu-menu-menu-finanzen .more-link a {
+  width: 250px; 
 }

@@ -4,7 +4,7 @@
 /* ---------------------------- OUTFLOW PERSONAL ------------------------------- */
 /* ----------------------------------------------------------------------------- */
 
-function finanzen_outflow_general ( $date = 0 )
+function finanzen_outflow_personal_general ( $date = 0 )
 {
   if ($date == 0) {
     $current_date = time ();
@@ -12,12 +12,251 @@ function finanzen_outflow_general ( $date = 0 )
   }
   else { $first_day_month = $date; }
   
-  //$content .= '<div class="finanzen-title-table">Jahresübersicht Personalkosten</div>';
-  $content .= finanzen_reports_outflow_personal($date);
-  $content .= finanzen_reports_outflow_personal_extern($date);
+  $content .=  _finanzen_outflow_personal_general_navigator($first_day_month);
+  $content .= finanzen_reports_outflow_personal($first_day_month);
+  $content .= finanzen_reports_outflow_personal_extern($first_day_month);
 
   return $content;
 }
+
+function _finanzen_outflow_personal_general_navigator($date)
+{ 
+  $content .= '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-date">Jahresübersicht Personalkosten + Projektbezogene Ausgaben ' 
+              . date('Y', $date) . "</div>";
+  $content .= '<div class="navigator-next">';
+  
+  if (time() > _finanzen_get_first_day_next_year($date)) {
+    $content .= '<a title="Go to next year" href="/finanzen/outflow/personal/general/' 
+	            . _finanzen_get_first_day_next_year($date) . '"> &#8811; </a>';
+  }
+  else 
+    $content .= '<span class="muted"> &#8811; </span>';
+    
+  $content .= "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > ABSOLUTE_INITIAL_TIME) {
+  	$content .= '<a title="Go to previous year" href="/finanzen/outflow/personal/general/' 
+  	            . _finanzen_get_first_day_previous_year($date) . '"> &#8810; </a>';
+  }
+  else
+    $content .= '<span class="muted"> &#8810; </span>';
+  
+  $content .= "</div>";
+  
+  $content .= "</div>"; // class="navigator"
+   
+  return $content;     
+}
+
+
+function finanzen_reports_outflow_personal( $date = 0 ) {
+  
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+  
+  $row_personalkosten_gesamt = array();
+  $row_personalkosten_gesamt['person'] = "Gesamt Personalkosten";
+  $row_freelancers_gesamt = array();
+  $row_freelancers_gesamt['person'] = "Gesamt Freelancers";
+  $row_angestellete_gesamt = array();
+  $row_angestellete_gesamt['person'] = "Gesamt Angestellete";  
+  $total_all_users_year = 0;
+  
+  $months_curr_year = _finanzen_list_months_year ($first_day_month, 1);
+  $header = array('person' => array('data' => t("Eigeneleistung"),'class' => 'bold black column_person')) + 
+  			$months_curr_year + array('total' => array('data' => t("Gesamt"),'class' => 'column_total'));
+                    
+  /* $query = "SELECT DISTINCT finanzen_outflow_worker_month.uid FROM finanzen_outflow_worker_month 
+               INNER JOIN users ON finanzen_outflow_worker_month.uid=users.uid
+               LEFT JOIN users_roles ON finanzen_outflow_worker_month.uid=users_roles.uid
+               WHERE date>=" . _finanzen_first_day_year($first_day_month) . "
+               AND date<" . _finanzen_get_first_day_next_year($first_day_month) . "
+               ORDER BY users_roles.rid DESC, users.name"; */
+            
+  $query = "SELECT DISTINCT finanzen_outflow_worker_month.uid FROM finanzen_outflow_worker_month 
+            INNER JOIN node ON node.type='profile' AND node.uid = finanzen_outflow_worker_month.uid
+  	  		INNER JOIN content_type_profile ON content_type_profile.nid = node.nid
+            INNER JOIN users ON finanzen_outflow_worker_month.uid=users.uid
+            LEFT JOIN users_roles ON finanzen_outflow_worker_month.uid=users_roles.uid
+            WHERE date>=" . _finanzen_first_day_year($first_day_month) . " 
+            AND date<" . _finanzen_get_first_day_next_year($first_day_month) . " 
+            ORDER BY content_type_profile.field_labour_agreement_value DESC,users_roles.rid DESC, users.name";          
+  $queryResult = db_query ($query);
+  
+  $first_fest = TRUE;
+ 
+  while ($user = db_fetch_object($queryResult)){
+   
+    $row = array('person' => array('data' => _finanzen_get_user_name($user->uid), 'class' => 'not-empty'));
+    $total_user_year = 0;
+    $user_agreement = _finanzen_get_user_labour_agreement($user->uid);
+    
+	foreach ($months_curr_year as $month_name => $month_data ) {
+	
+		$total_user_month = 0;
+		if (empty($row_personalkosten_gesamt[$month_name])): $row_personalkosten_gesamt[$month_name] = 0; endif;
+		if (empty($row_freelancers_gesamt[$month_name])): $row_freelancers_gesamt[$month_name] = 0; endif;
+		if (empty($row_angestellete_gesamt[$month_name])): $row_angestellete_gesamt[$month_name] = 0; endif;
+		
+		$query2 = "SELECT * from finanzen_outflow_worker_month
+				   WHERE uid=" . $user->uid . " AND date=" . $month_data['date'];
+		$queryResult2 = db_query ( $query2 );
+		
+		while ($outflow = db_fetch_object($queryResult2)) {
+			$total_user_month += $outflow->spend;
+			$row_personalkosten_gesamt[$month_name] += $outflow->spend;
+			$total_user_year += $outflow->spend;
+			if ($user_agreement == "Freelancer")
+			  $row_freelancers_gesamt[$month_name] += $outflow->spend;
+			else //$user_agreement == "Employee"
+			  $row_angestellete_gesamt[$month_name] += $outflow->spend;
+		}
+		
+		if ($total_user_month > 0)
+  		  $row[] = array('data' => _finanzen_format_number($total_user_month), 'class' => 'not-empty');
+  		else 
+    	  $row[] = _finanzen_format_number($total_user_month);
+
+	}
+	
+	if ($first_fest && ($user_agreement == "Employee")) {	
+		$first_fest = FALSE;
+		$total_year_freelancers = 0;
+	    foreach ($row_freelancers_gesamt as $month_name => $month_data) {
+		   if ($month_name != "person") {
+		      $total_year_freelancers += $month_data;
+			  $row_freelancers_gesamt[$month_name] = _finanzen_format_number($month_data);
+		   }
+	    }
+	    $row_freelancers_gesamt['total'] = _finanzen_format_number($total_year_freelancers);
+	    $rows[] = array('data' => $row_freelancers_gesamt, 'class' => 'not-empty bold light-grey');
+	}
+	
+	
+	$total_all_users_year += $total_user_year;
+	
+	$row['total'] = array('data' => _finanzen_format_number($total_user_year), 'class' => 'not-empty bold');
+	$rows[] = $row;
+  }
+  
+  /*
+  if ($row_freelancers_gesamt) {
+      $total_year_freelancers = 0;
+	  foreach ($row_freelancers_gesamt as $month_name => $month_data) {
+		 if ($month_name != "person") {
+		    $total_year_freelancers += $month_data;
+			$row_freelancers_gesamt[$month_name] = _finanzen_format_number($month_data);
+		 }
+	  }
+	  $row_freelancers_gesamt['total'] = _finanzen_format_number($total_year_freelancers);
+  }
+  $rows[] = array('data' => $row_freelancers_gesamt, 'class' => 'not-empty bold light-grey');
+  */
+
+  if ($row_angestellete_gesamt) {
+      $total_year_angestellte = 0;  
+	  foreach ($row_angestellete_gesamt as $month_name => $month_data) {
+		 if ($month_name != "person") {
+			 $total_year_angestellte += $month_data;
+			 $row_angestellete_gesamt[$month_name] = _finanzen_format_number($month_data);
+		 }
+	  }
+	  $row_angestellete_gesamt['total'] = _finanzen_format_number($total_year_angestellte);
+  }
+  $rows[] = array('data' => $row_angestellete_gesamt, 'class' => 'not-empty bold light-grey');
+
+  if ($row_personalkosten_gesamt) {
+	  foreach ($row_personalkosten_gesamt as $month_name => $month_data) {
+		 if ($month_name != "person")
+			$row_personalkosten_gesamt[$month_name] = _finanzen_format_number($month_data);
+	  }
+	  $row_personalkosten_gesamt['total'] = _finanzen_format_number($total_all_users_year);
+  }
+  $rows[] = array('data' => $row_personalkosten_gesamt, 'class' => 'not-empty bold grey');
+  
+  $content .= theme_table($header, $rows, array('class' => 'finanzen reports'));
+  
+  return $content;
+}
+
+
+function finanzen_reports_outflow_personal_extern( $date = 0 ) {
+  
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+  
+  $last_row = array();
+  $total_all_users_year = 0;
+  
+  $months_curr_year = _finanzen_list_months_year ($first_day_month, 4); 
+  $header = array('name' => array('data' => t("Fremdeleistung"),'class' => 'bold black column_person')) + 
+            $months_curr_year +
+            array('total' => array('data' => t("Gesamt"),'class' => 'column_total'));
+                    
+  $query = "SELECT DISTINCT extern_id FROM finanzen_outflow_worker_extern_month 
+  			WHERE date>=" . _finanzen_first_day_year($first_day_month) .
+		  	" AND date<" . _finanzen_get_first_day_next_year($first_day_month) .
+  			" ORDER BY extern_id";
+  $queryResult = db_query ( $query );
+  
+  while ($extern = db_fetch_object($queryResult)){
+    $row = array('name' => array('data' => _finanzen_outflow_personal_extern_get_extern_name($extern->extern_id),  
+                                 'class' => 'not-empty'));
+    $last_row['name'] = "Gesamt Beratungen";
+    
+    $total_user_year = 0;
+	
+	foreach ($months_curr_year as $month_name => $month_data ) {
+		
+		$total_extern_month = 0;
+		if (empty($last_row[$month_name])): $last_row[$month_name] = 0; endif;
+		
+		$query2 = "SELECT * from finanzen_outflow_worker_extern_month
+				   WHERE extern_id=" . $extern->extern_id . " AND date=" . $month_data['date'];
+		$queryResult2 = db_query ( $query2 );
+		
+		while ($outflow = db_fetch_object($queryResult2)) {
+			$total_extern_month += $outflow->spend;
+			$last_row[$month_name] += $outflow->spend;
+			$total_user_year += $outflow->spend;
+		}
+		
+		if ($total_extern_month > 0)
+  		  $row[] = array('data' => _finanzen_format_number($total_extern_month), 'class' => 'not-empty');
+  		else
+		  $row[] = _finanzen_format_number($total_extern_month);
+	}
+	
+    $total_all_users_year += $total_user_year;
+		
+    $row['total'] = array('data' => _finanzen_format_number($total_user_year), 'class' => 'bold not-empty');
+	$rows[] = $row;
+  }
+
+  if ($last_row) {
+	  foreach ($last_row as $month_name => $month_data){
+	       if ($month_name != "name")
+			 $last_row[$month_name] = _finanzen_format_number($month_data);
+	  }
+	  $last_row['total'] = _finanzen_format_number($total_all_users_year);
+  }
+  
+  $rows[] = array('data' => $last_row, 'class' => 'bold not-empty light-grey');
+    
+  $content .= theme_table($header, $rows, array('class' => 'finanzen reports'));
+
+  return $content;
+}
+
 
 /* --------------------- Finanzen Personal Outflow Edit month --------------------------------- */
 
@@ -27,7 +266,7 @@ function finanzen_outflow_general ( $date = 0 )
 function _finanzen_outflow_personal_edit_month_navigator ( $date ) 
 {
   $content .= '<div class="navigator">';
-  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
+  $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/general/' . $date . '"> &#8592; zurück</a></div>';
   $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
@@ -277,7 +516,7 @@ function finanzen_outflow_personal_extern_change_status ( $id, $status )
 function _finanzen_outflow_personal_extern_navigator ( $date ) 
 {
   $content .= '<div class="navigator">';
-  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
+  $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/general/' . $date . '"> &#8592; zurück</a></div>';
   $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
@@ -433,6 +672,53 @@ function finanzen_outflow_personal_extern_add_form_validate($form, &$form_state)
 /* ---------------------------- OUTFLOW SONSTIGES ------------------------------ */
 /* ----------------------------------------------------------------------------- */
 
+function finanzen_outflow_sonstiges_general ( $date = 0 )
+{
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_month = _finanzen_first_day_month($current_date);
+  }
+  else { $first_day_month = $date; }
+  
+  $content .= _finanzen_outflow_sonstiges_general_navigator($first_day_month); 
+  $content .= finanzen_reports_outflow_sonstiges($first_day_month);
+
+  return $content;
+}
+
+function _finanzen_outflow_sonstiges_general_navigator($date)
+{ 
+  $content .= '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-date">Jahresübersicht Bürokosten ' 
+              . date('Y', $date) . "</div>";
+  $content .= '<div class="navigator-next">';
+  
+  if (time() > _finanzen_get_first_day_next_year($date)) {
+    $content .= '<a title="Go to next year" href="/finanzen/outflow/sonstiges/general/' 
+	            . _finanzen_get_first_day_next_year($date) . '"> &#8811; </a>';
+  }
+  else 
+    $content .= '<span class="muted"> &#8811; </span>';
+    
+  $content .= "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > ABSOLUTE_INITIAL_TIME) {
+  	$content .= '<a title="Go to previous year" href="/finanzen/outflow/sonstiges/general/' 
+  	            . _finanzen_get_first_day_previous_year($date) . '"> &#8810; </a>';
+  }
+  else
+    $content .= '<span class="muted"> &#8810; </span>';
+  
+  $content .= "</div>";
+  
+  $content .= "</div>"; // class="navigator"
+   
+  return $content;     
+}
+
+
 
 function finanzen_outflow_sonstiges_categories () {
   
@@ -528,8 +814,8 @@ function finanzen_outflow_sonstiges_categories_change_status ( $id, $status )
 function _finanzen_outflow_sonstiges_edit_month_navigator ( $date ) 
 {
   $content .= '<div class="navigator">';
-  //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/' . $date . '"> &#8592; Back</a></div>';
-  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; Back</a></div>';
+  //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/general/' . $date . '"> &#8592; zurück</a></div>';
   $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
