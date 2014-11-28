@@ -265,10 +265,10 @@ function finanzen_inflow ( $date = 0 )
   
   $content .= _finanzen_inflow_navigator($first_day_month);
   
-  $header = array('invoice_nr' => t("Rechnung Nr."), 
+  $header = array('invoice_nr' => array('data' => t("Rechnung Nr."), 'class' => 'column_invoice_nr'), 
   				  'project' => t("Projekt"), 
   				  'date'  => t("Datum"),
-  				  'spend' => t("Betrag"), 
+  				  'spend' => array('data' => t("Betrag"), 'class' => 'column_money'),
   				  'taxrate' => t("MwSt"),
   				  'edit' => t("Edit"), 
   				  'delete' => t("Delete"),
@@ -366,10 +366,10 @@ function finanzen_inflow_all ( $date = 0 )
     $first_day_year = _finanzen_first_day_year($date); 
   }
   
-  $header = array('invoice_nr' => t("Rechnung Nr."), 
+  $header = array('invoice_nr' => array('data' => t("Rechnung Nr."), 'class' => 'column_invoice_nr'), 
   				  'project' => t("Projekt"),
   				  'date'  => t("Datum"),
-  				  'spend' => t("Betrag"), 
+  				  'spend' => array('data' => t("Betrag"), 'class' => 'column_money'),
   				  'taxrate' => t("MwSt"),
   				  'edit' => t("Edit"), 
   				  'delete' => t("Delete"),

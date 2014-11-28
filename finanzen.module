@@ -150,6 +150,30 @@ function finanzen_menu() {
 	'file' => 'finanzen.outflow.inc',
   );
   
+  $items['finanzen/outflow/personal/extern/edit/%'] = array (
+    'page callback' => 'finanzen_outflow_personal_extern_edit',
+    'page arguments' => array ( 5 ),
+    'access arguments' => array('administer finanzen'),
+    'type' => MENU_CALLBACK,
+    'file' => 'finanzen.outflow.inc',
+  );
+
+  $items['finanzen/outflow/personal/extern/delete/confirmation/%'] = array (
+    'page callback' => 'finanzen_outflow_personal_extern_delete_confirmation',
+    'page arguments' => array ( 6 ),
+    'access arguments' => array('administer finanzen'),
+    'type' => MENU_CALLBACK,
+    'file' => 'finanzen.outflow.inc',
+  );
+  
+  $items['finanzen/outflow/personal/extern/delete/%'] = array (
+    'page callback' => 'finanzen_outflow_personal_extern_delete',
+    'page arguments' => array ( 5 ),
+    'access arguments' => array('administer finanzen'),
+    'type' => MENU_CALLBACK,
+    'file' => 'finanzen.outflow.inc',
+  );
+  
   /* --- OUTFLOW SONSTIGES --- */
   
   $items['finanzen/outflow/sonstiges/general'] = array (
@@ -309,6 +333,8 @@ function finanzen_preprocess_page(&$vars)
  */
 function finanzen_mainpage( $date = 0 ) {
   
+  _finanzen_detect_errors();
+  
   if ($date == 0) {
     $current_date = time ();
     $first_day_year = _finanzen_first_day_year($current_date);
@@ -316,26 +342,6 @@ function finanzen_mainpage( $date = 0 ) {
   else { $first_day_year = _finanzen_first_day_year($date); }
   
   $current_year = _finanzen_get_year($first_day_year);
-  
-  /*
-  $content .= '<div class="finanzen-title-table">
-  				 <a href="/finanzen/outflow/personal/general/' . $first_day_year . '">
-  				   Personalkosten + Projektbezogene Ausgaben ' . $current_year . '
-  				 </a>  &nbsp&nbsp&nbsp  
-  				 <a href="/finanzen/outflow/sonstiges/general/' . $first_day_year . '">
-  				   Bürokosten ' . $current_year . '
-  				 </a>  &nbsp&nbsp&nbsp 
-  				 <a href="/finanzen/inflow/general/' . $first_day_year . '">
-  				   Ausgangsrechnungen ' . $current_year . '
-  				 </a>  &nbsp&nbsp&nbsp  
-  				 <a href="/finanzen/inflow/all/' . $first_day_year . '">
-  				   Zusammenstellung der Rechnungen ' . $current_year . '
-  				 </a>  &nbsp&nbsp&nbsp </br> 
-  				 <a href="/finanzen/reports/projects/general">
-  				   Alle Projekte inflow-outflow ' . $current_year . '
-  				 </a>
-  			   </div>';
-  */
   			   
   $content .= _finanzen_year_reports_navigator($first_day_year);
   $content .= '<div class="finanzen-title-table">Gesamt</div>';
@@ -349,6 +355,22 @@ function finanzen_mainpage( $date = 0 ) {
 /* ------------------------------------------------------------------------------ */
 /* ----------------------- GENERAL AUXILIAR FUNCTIONS --------------------------- */
 /* ------------------------------------------------------------------------------ */
+
+function _finanzen_detect_errors() {
+  
+  /* Falta profile en usuario */
+  $query = "SELECT uid, name FROM users WHERE uid!=0";
+  $queryResult = db_query ($query);
+
+  while ($current_user = db_fetch_object($queryResult)) {
+    $query2 = "SELECT * FROM node WHERE type='profile' AND uid=" . $current_user->uid;
+    $queryResult2 = db_query ($query2);
+    if (db_affected_rows() == 0)
+      drupal_set_message("User " . $current_user->name . " do not has profile. 
+                          FINANZEN needs this info to distinguish between Freelacers and Employes.
+                          Create it <a target='_blank' href='/user/" . $current_user->uid . "/edit/profile'>here</a>.", "warning");
+  }
+}
 
 /**
  * This function calculates next month in the calendar 

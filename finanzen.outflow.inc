@@ -12,7 +12,7 @@ function finanzen_outflow_personal_general ( $date = 0 )
   }
   else { $first_day_month = $date; }
   
-  $content .=  _finanzen_outflow_personal_general_navigator($first_day_month);
+  $content .= _finanzen_outflow_personal_general_navigator($first_day_month);
   $content .= finanzen_reports_outflow_personal($first_day_month);
   $content .= finanzen_reports_outflow_personal_extern($first_day_month);
 
@@ -221,7 +221,9 @@ function finanzen_reports_outflow_personal_extern( $date = 0 ) {
 		if (empty($last_row[$month_name])): $last_row[$month_name] = 0; endif;
 		
 		$query2 = "SELECT * from finanzen_outflow_worker_extern_month
-				   WHERE extern_id=" . $extern->extern_id . " AND date=" . $month_data['date'];
+				   WHERE extern_id=" . $extern->extern_id . " 
+				   AND date>=" . $month_data['date'] . "
+				   AND date<" . _finanzen_get_first_day_next_month($month_data['date']);
 		$queryResult2 = db_query ( $query2 );
 		
 		while ($outflow = db_fetch_object($queryResult2)) {
@@ -544,7 +546,9 @@ function finanzen_outflow_personal_extern ( $date = 0 )
   				  'edit' => t("Edit"), 
   				  'delete' => t("Delete"));
   
-  $query = "SELECT * FROM finanzen_outflow_worker_extern_month WHERE date=" . $first_day_month;
+  $query = "SELECT * FROM finanzen_outflow_worker_extern_month 
+            WHERE date>=" . _finanzen_first_day_month($first_day_month) . "
+            AND date<" . _finanzen_get_first_day_next_month($first_day_month);
   $queryResult = db_query ($query);
 
   $total_amount = 0;
@@ -554,9 +558,9 @@ function finanzen_outflow_personal_extern ( $date = 0 )
 	 			  'spend' => $current_invoice->spend . ' €',
  				  'taxrate' => $current_invoice->taxrate . '%',
  				  'edit' => '<a href="/finanzen/outflow/personal/extern/edit/' . 
-   				  			   $current_invoice->nid . '/' . $first_day_month . '">edit</a>',
+   				  			   $current_invoice->nid . '">edit</a>',
    				  'delete' => '<a href="/finanzen/outflow/personal/extern/delete/confirmation/' . 
-   				  			   $current_invoice->nid . '/' . $first_day_month . '">delete</a>' );
+   				  			   $current_invoice->nid . '">delete</a>' );
 	   				  
 	$rows[] = $row;
 	$total_amount += $current_invoice->spend;
@@ -612,7 +616,7 @@ function finanzen_outflow_personal_extern_add_form ( $form, $date, $projects, $e
 	                          '#required' => TRUE,
 	                          '#prefix' => '<div class="outflow-personal-extern-add to-left bleed-right">',
 	                          '#suffix' => '</div>',
-	                           ),        
+	                         ),        
 	   'project' => array ( '#type' => 'select',
 	                        '#title' => 'Project',
 	                        '#options' => $projects,
@@ -637,7 +641,8 @@ function finanzen_outflow_personal_extern_add_form ( $form, $date, $projects, $e
 	   'submit' => array ( '#type' => 'submit',  
 	   					   '#value' => t('Save'), 
 	      				   '#prefix' => '<div class="clear-left bleed-left">',
-	                       '#suffix' => '</div>',),
+	                       '#suffix' => '</div>',
+	                     ),
 	    ),
   );
 	  
@@ -666,6 +671,144 @@ function finanzen_outflow_personal_extern_add_form_validate($form, &$form_state)
   if (!is_numeric($form_state['values']['spend'])) {
     form_set_error("spend", t('Spend: You must enter a numeric value.'));
   }
+}
+
+/* OUTFLOW EXTERN PERSONAL edit  */
+
+function finanzen_outflow_personal_extern_edit ( $id )
+{
+  $content .= drupal_get_form ( 'finanzen_outflow_personal_extern_edit_form', $id );
+  return $content;
+}
+
+
+function finanzen_outflow_personal_extern_edit_form ( $form, $id )
+{
+  $query = "SELECT * FROM finanzen_outflow_worker_extern_month WHERE nid=" . $id;
+  $queryResult = db_query ($query);
+  $current_invoice = db_fetch_object($queryResult);
+  $dateformat = 'd.m.Y';
+  
+  $query2 = "SELECT og.nid FROM og 
+    		 INNER JOIN content_type_group ON content_type_group.nid = og.nid
+  			 ORDER BY content_type_group.field_project_code_value";           
+  $queryResult2 = db_query ($query2);
+  
+  while ($project_id = db_fetch_object($queryResult2))
+  	$projects[$project_id->nid] = _finanzen_get_project_code($project_id->nid);
+
+  $projects['0'] = 'NONE';
+  
+  $query3 = "SELECT * FROM finanzen_outflow_worker_extern WHERE active=1";
+  $queryResult3 = db_query ($query3);
+  while ($extern = db_fetch_object($queryResult3))
+  	$externs[$extern->nid] = $extern->name;
+ 
+  $form = array (
+    'outflow_personal_extern_edit' => array (
+      '#type' => 'fieldset',
+      'extern_id' => array ( '#type' => 'select',
+	                          '#title' => 'Extern Name',
+	                          '#options' => $externs,
+	                          '#default_value' => $current_invoice->extern_id,
+	                          '#required' => TRUE,
+	                          '#prefix' => '<div class="outflow-personal-extern-add to-left bleed-right">',
+	                          '#suffix' => '</div>',
+	                         ),
+      'project' => array ( '#type' => 'select',
+                           '#title' => 'Projekt',
+                           '#options' => $projects,
+                           '#default_value' => $current_invoice->project_id,
+                           '#required' => TRUE,
+                           '#prefix' => '<div class="inflow-add to-left bleed-right">',
+                           '#suffix' => '</div>',
+                         ),
+      'spend' => array ( '#type' => 'textfield',
+                         '#title' => 'Betrag €',
+                         '#default_value' => $current_invoice->spend,
+                         '#required' => TRUE,
+                         '#prefix' => '<div class="inflow-add to-left bleed-right">',
+                         '#suffix' => '</div>',
+                       ),
+      'taxrate' => array ( '#type' => 'select',
+                           '#title' => 'MwSt',
+                           '#options' => array('0' => '0%', '7' => '7%', '19' => '19%'),
+                           '#default_value' => $current_invoice->taxrate,
+                           '#required' => TRUE,
+                           '#prefix' => '<div class="inflow-add to-left ">',
+                           '#suffix' => '</div>',
+                         ),
+      'date'  => array ( '#type' => 'date_popup',
+                         '#title' => 'Datum',
+                         '#date_format' => $dateformat,
+                         '#default_value' => date("Y-m-d", $current_invoice->date),
+                         '#required' => TRUE,
+                         '#date_year_range' => '-1:+1',
+                         '#prefix' => '<div class="inflow-add to-left ">',
+                         '#suffix' => '</div>',
+                       ),
+      'id' => array ( '#type' => 'hidden', "#default_value" => $current_invoice->nid ),
+      'submit' => array ( '#type' => 'submit',  
+      					  '#value' => t('Save'), 
+      					  '#prefix' => '<div class="clear-left bleed-left">',
+                          '#suffix' => '</div>',),
+    ),
+  );
+  
+  $form['#redirect'] = 'finanzen/outflow/personal/extern/' . _finanzen_first_day_month($current_invoice->date);
+  
+  return $form;
+}
+
+function finanzen_outflow_personal_extern_edit_form_submit ( $form, &$form_state )
+{
+  $extern_id = $form_state['values']['extern_id'];
+  $project_id = $form_state['values']['project'];
+  $spend = $form_state['values']['spend'];
+  $taxrate = $form_state['values']['taxrate'];
+  $id = $form_state['values']['id'];
+  $date = strtotime($form_state['values']['date']);
+  
+  $query = "UPDATE finanzen_outflow_worker_extern_month SET 
+  			extern_id=" . $extern_id . ",
+  			project_id=" . $project_id . ", 
+  			spend=" . $spend . ",  
+  			taxrate=" . $taxrate . ",
+  			date=" . $date . "
+  			WHERE nid=" . $id;
+  $queryResult = db_query ( $query );
+  
+  if ($queryResult)
+    drupal_set_message("Fremdeleistung Rechnung modified correctly", "status");
+ 
+}
+
+
+function finanzen_outflow_personal_extern_edit_form_validate($form, &$form_state) 
+{
+  if (!is_numeric($form_state['values']['spend'])) {
+    form_set_error("spend", t('Betrag: You must enter a numeric value.'));
+  }
+}
+
+
+/* OUTFLOW EXTERN PERSONAL delete with confirmation */
+
+function finanzen_outflow_personal_extern_delete_confirmation ( $id, $date = 0 )
+{
+  $query = "SELECT * FROM finanzen_outflow_worker_extern_month WHERE nid=" . $id;
+  $queryResult = db_query ($query);
+  $invoice = db_fetch_object($queryResult);
+  drupal_set_message ( 'Invoice of ' . $invoice->spend . '€ for the project ' . _finanzen_get_project_code($invoice->project_id) . ' is going to be deleted. This action cannot be undone. <a href="/finanzen/outflow/personal/extern/delete/' .  $id . '/' . $invoice->date . '">Confirm</a>', "warning");
+  return finanzen_outflow_personal_extern($invoice->date);
+}
+
+function finanzen_outflow_personal_extern_delete ( $id, $date = 0 )
+{
+  $query = "DELETE FROM finanzen_outflow_worker_extern_month WHERE nid=" . $id ;
+  $queryResult = db_query ( $query );
+  drupal_set_message ( "Invoice deleted.", "status");
+  return finanzen_outflow_personal_extern($date);
 }
 
 /* ----------------------------------------------------------------------------- */

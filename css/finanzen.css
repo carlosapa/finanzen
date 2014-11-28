@@ -162,6 +162,9 @@ span.muted {
 .column_money   { width: 90px; }
 .column_date { width: 140px; }
 .column_concept { width: 140px; }
+.column_invoice_nr { width: 100px; }
+
+table.all-invoices { width: 700px !important; }
 
 /* Anchos particulares por tablas */
 .timesheet-edit-month .column_project { width: 150px; }
