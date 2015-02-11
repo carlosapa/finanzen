@@ -24,8 +24,7 @@ function _finanzen_inflow_general_navigator($date)
 { 
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">Jahresübersicht Ausgangsrechnungen ' . date('Y', $date) . "</div>";
-  
+  $content .= '<div class="navigator-title bold black">Jahresübersicht Ausgangsrechnungen</div>';
   $content .= '<div class="navigator-next">';
   
   $query = "SELECT date FROM finanzen_inflow ORDER BY date DESC LIMIT 1";
@@ -44,6 +43,8 @@ function _finanzen_inflow_general_navigator($date)
     $content .= '<span class="muted"> &#8811; </span>';
     
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('Y', $date) . "</div>";
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -329,10 +330,6 @@ function _finanzen_inflow_navigator($date)
   $content .= '<div class="navigator">';
   
   $content .= '<div class="navigator-back"><a href="/finanzen/inflow/general/' . $date . '"> &#8592; zurück</a></div>';
-  
-  $content .= '<div class="navigator-date">';
-  $content .= date('F Y', $date);
-  $content .= "</div>";
 
   $content .= '<div class="navigator-next">';
   //if ($date < $current_first_day_month) {
@@ -341,6 +338,8 @@ function _finanzen_inflow_navigator($date)
   //}
   //else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -441,8 +440,7 @@ function _finanzen_inflow_all_navigator($date)
 { 
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">Zusammenstellung der Rechnungen ' . _finanzen_get_year($date) . '</div>';
-  
+  $content .= '<div class="navigator-title bold black">Zusammenstellung der Rechnungen</div>';
   $content .= '<div class="navigator-next">';
   
   $query = "SELECT date FROM finanzen_inflow ORDER BY date DESC LIMIT 1";
@@ -461,6 +459,8 @@ function _finanzen_inflow_all_navigator($date)
     $content .= '<span class="muted"> &#8811; </span>';
     
   $content .= "</div>";
+
+  $content .= '<div class="navigator-date black">' . _finanzen_get_year($date) . '</div>';
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {

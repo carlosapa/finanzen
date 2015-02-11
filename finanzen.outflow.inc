@@ -23,8 +23,7 @@ function _finanzen_outflow_personal_general_navigator($date)
 { 
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">Jahresübersicht Personalkosten + Projektbezogene Ausgaben ' 
-              . date('Y', $date) . "</div>";
+  $content .= '<div class="navigator-title bold black">Jahresübersicht Personalkosten + Projektbezogene Ausgaben</div>';  
   $content .= '<div class="navigator-next">';
   
   if (time() > _finanzen_get_first_day_next_year($date)) {
@@ -35,6 +34,8 @@ function _finanzen_outflow_personal_general_navigator($date)
     $content .= '<span class="muted"> &#8811; </span>';
     
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date bold black">' . date('Y', $date) . '</div>';
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -269,7 +270,7 @@ function _finanzen_outflow_personal_edit_month_navigator ( $date )
 {
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/general/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
@@ -519,7 +520,7 @@ function _finanzen_outflow_personal_extern_navigator ( $date )
 {
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/general/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
@@ -833,8 +834,8 @@ function _finanzen_outflow_sonstiges_general_navigator($date)
 { 
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">Jahresübersicht Bürokosten ' 
-              . date('Y', $date) . "</div>";
+  
+  $content .= '<div class="navigator-title bold black">Jahresübersicht Bürokosten</div>';
   $content .= '<div class="navigator-next">';
   
   if (time() > _finanzen_get_first_day_next_year($date)) {
@@ -845,6 +846,8 @@ function _finanzen_outflow_sonstiges_general_navigator($date)
     $content .= '<span class="muted"> &#8811; </span>';
     
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('Y', $date) . "</div>";
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -959,7 +962,7 @@ function _finanzen_outflow_sonstiges_edit_month_navigator ( $date )
   $content .= '<div class="navigator">';
   //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/' . $date . '"> &#8592; zurück</a></div>';
   $content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/general/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;

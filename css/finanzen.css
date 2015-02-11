@@ -25,6 +25,17 @@ div.navigator-prev a,
 div.navigator-back a { color: #666666; }
 
 div.navigator-date {
+  /*float: left;
+  padding: 5px 0 0 0px;*/
+  float: right;
+  padding: 5px;
+  font-size: 14pt;
+  color: #666666;
+  margin: 0px 5px;
+  /*margin:0 10px 5px 0;*/
+}
+
+div.navigator-title {
   float: left;
   padding: 5px 0 0 0px;
   font-size: 14pt;
@@ -278,4 +289,8 @@ tr.empty-row {
 .dropdown-blocks #block-menu-menu-menu-finanzen li a, 
 .dropdown-blocks #block-menu-menu-menu-finanzen .more-link a {
   width: 250px; 
+}
+
+.inflow-add .form-item .form-item {
+  padding: 0px;
 }

@@ -344,7 +344,9 @@ function finanzen_mainpage( $date = 0 ) {
   $current_year = _finanzen_get_year($first_day_year);
   			   
   $content .= _finanzen_year_reports_navigator($first_day_year);
-  $content .= '<div class="finanzen-title-table">Gesamt</div>';
+  
+  //$content .= '<div class="finanzen-title-table">Gesamt</div>';
+  
   $content .= finanzen_reports_year($first_day_year);
   $content .= '</br><div class="finanzen-title-table">Leistungsübersicht nach Projekt</div>';
   $content .= finanzen_reports_summary_projects($first_day_year);
@@ -796,8 +798,6 @@ function _finanzen_reports_navigator($date)
   
   $content .= '<div class="navigator">';
   
-  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
-  
   $content .= '<div class="navigator-next">';
   if ($date < $current_first_day_month) {
 	$content .= '<a title="Go to next month" href="/finanzen/reports/' 
@@ -805,6 +805,8 @@ function _finanzen_reports_navigator($date)
   }
   else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -835,8 +837,6 @@ function _finanzen_year_reports_navigator($date)
   
   $content .= '<div class="navigator">';
   
-  $content .= '<div class="navigator-date bold black">' . date('Y', $first_day_year) . '</div>';
-  
   $content .= '<div class="navigator-next">';
   if ($first_day_year < $current_first_day_year) {
 	$content .= '<a title="Go to next month" href="/finanzen/' 
@@ -844,7 +844,9 @@ function _finanzen_year_reports_navigator($date)
   }
   else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
-   
+  
+  $content .= '<div class="navigator-date black">' . date('Y', $first_day_year) . '</div>'; 
+  
   $content .= '<div class="navigator-prev">';
   if ($first_day_year > ABSOLUTE_INITIAL_TIME) {
   	$content .= '<a title="Go to previous month" href="/finanzen/' 
@@ -876,8 +878,7 @@ function _finanzen_reports_project_detail_navigator($date, $project_id)
   
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
   
-  $content .= '<div class="navigator-date">' . 'Project ' . _finanzen_get_project_code($project_id) . ' ' . 
-               date('Y', $first_day_year) . '</div>';
+  $content .= '<div class="navigator-title bold black">' . _finanzen_get_project_code($project_id) . '</div>';
   
   $content .= '<div class="navigator-next">';
   if ($first_day_year < $current_first_day_year) {
@@ -886,6 +887,8 @@ function _finanzen_reports_project_detail_navigator($date, $project_id)
   }
   else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('Y', $first_day_year) . '</div>';
    
   $content .= '<div class="navigator-prev">';
   if ($first_day_year > ABSOLUTE_INITIAL_TIME) {
@@ -1759,8 +1762,8 @@ function finanzen_reports_project_general ( $date = 0 ) {
   
   //$total_studio_year = 0;
   
-  $query = "SELECT og.nid FROM og 
-  			INNER JOIN content_type_group ON content_type_group.nid = og.nid 
+  $query = "SELECT og.nid FROM og
+  			INNER JOIN content_type_group ON content_type_group.nid = og.nid
   			ORDER BY content_type_group.field_project_code_value";
   $queryResult = db_query ( $query );
   
@@ -1776,8 +1779,7 @@ function _finanzen_reports_project_general_navigator($date)
 { 
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">Jahresübersicht aller Projekte ' 
-              . date('Y', $date) . "</div>";
+  $content .= '<div class="navigator-title black bold">Jahresübersicht aller Projekte</div>';
   $content .= '<div class="navigator-next">';
   
   if (time() > _finanzen_get_first_day_next_year($date)) {
@@ -1788,6 +1790,8 @@ function _finanzen_reports_project_general_navigator($date)
     $content .= '<span class="muted"> &#8811; </span>';
   
   $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('Y', $date) . "</div>";
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -1955,7 +1959,7 @@ function _finanzen_project_edit_contract_navigator ( $project_id )
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/reports/project/' 
               . $current_date . '/' . $project_id . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date">' . _finanzen_get_project_code($project_id) . '</div>';
+  $content .= '<div class="navigator-title bold black">' . _finanzen_get_project_code($project_id) . '</div>';
   $content .= '</div>';
   
   return $content;

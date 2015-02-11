@@ -14,18 +14,18 @@ function _finanzen_timesheet_month_navigator($date)
   
   $content .= '<div class="navigator-back"><a href="/timesheet"> &#8592; Back </a></div>';
   
-  $content .= '<div class="navigator-date">';
-  $content .= date('F Y', $date);
-  $content .= '  <a href="/timesheet/edit-month/' . $date . '"><img class="edit-pencil" src="/' 
-              . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit all</a>';
-  $content .= "</div>";
-  
   $content .= '<div class="navigator-next">';
   if ($date < $current_first_day_month) {
 	$content .= '<a title="Go to next month" href="/timesheet/month/' 
 	            . _finanzen_get_first_day_next_month($date) . '"> &#8811; </a>';
   }
   else { $content .= '<span class="muted"> &#8811; </span>'; }
+  $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">';
+  $content .= date('F Y', $date);
+  $content .= '  <a href="/timesheet/edit-month/' . $date . '"><img class="edit-pencil" src="/'
+              . drupal_get_path('module', 'finanzen') . '/img/pencil.png" />edit all</a>';
   $content .= "</div>";
   
   $content .= '<div class="navigator-prev">';
@@ -48,7 +48,7 @@ function _finanzen_timesheet_edit_month_navigator ( $date )
 {
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/timesheet/month/' . $date . '"> &#8592; Back </a></div>';
-  $content .= '<div class="navigator-date">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
