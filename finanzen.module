@@ -26,14 +26,12 @@ function finanzen_menu() {
   /* --- REPORTS -- */
       
   $items['finanzen/reports'] = array(
-    //'title' => t('Finanzen monthly reports'),
     'page callback' => 'finanzen_reports',
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
   );
   
   $items['finanzen/reports/project/%/%'] = array(
-    //'title' => t('Finanzen yearly detail report for project'),
     'page callback' => 'finanzen_reports_project_detail',
     'page arguments' => array ( 3,4 ),
     'access arguments' => array('administer finanzen'),
@@ -46,10 +44,22 @@ function finanzen_menu() {
 	'type' => MENU_CALLBACK,
   );
   
+  $items['finanzen/reports/timesheet'] = array(
+    'page callback' => 'finanzen_reports_timesheet',
+    'access arguments' => array('administer finanzen'),
+	'type' => MENU_CALLBACK,
+  );
+  
+  $items['finanzen/reports/timesheet/change_status/%/%'] = array (
+    'page callback' => 'finanzen_reports_timesheet_change_month_worker_status',
+    'page arguments' => array ( 4,5 ),
+    'access arguments' => array('administer finanzen'),
+    'type' => MENU_CALLBACK,
+  );
+  
   /* --- PROJECTS --- */
   
   $items['finanzen/project/edit-contract/%'] = array(
-    //'title' => t('Project Contract details'),
     'page callback' => 'finanzen_project_edit_contract',
     'page arguments' => array ( 3 ),
     'access arguments' => array('administer finanzen'),
@@ -67,14 +77,14 @@ function finanzen_menu() {
     'file' => 'finanzen.timesheet.inc',
   );
   
-  $items['timesheet/month/%'] = array (
+  $items['timesheet/month/%/%'] = array (
     'title' => t('Finanzen timesheet'),
     'description' => 'Timesheet',
     'page callback' => 'finanzen_timesheet_month',
-    'page arguments' => array ( 2 ),
-    'access arguments' => array('add hours to projects'),
+    'page arguments' => array ( 2,3 ),
+    'access arguments' => array('administer finanzen'),
     'type' => MENU_CALLBACK,
-        'file' => 'finanzen.timesheet.inc',
+    'file' => 'finanzen.timesheet.inc',
   );
   
   $items['timesheet/insert/%/%/%'] = array (
@@ -96,7 +106,7 @@ function finanzen_menu() {
   );  
   
   $items['timesheet/edit-month/%'] = array (
-    'title' => t('Modify Whole Month'),
+    'title' => t('Monthly View'),
     'page callback' => 'finanzen_timesheet_edit_month',
     'page arguments' => array ( 2 ),
     'access arguments' => array('add hours to projects'),
@@ -105,7 +115,6 @@ function finanzen_menu() {
   ); 
     
   $items['finanzen/outflow/personal/general'] = array (
-    //'title' => t('Jahresübersicht Personalkosten + Projektbezogene Ausgaben'),
     'page callback' => 'finanzen_outflow_personal_general',
     'access arguments' => array('administer finanzen'),
     'type' => MENU_CALLBACK,
@@ -113,7 +122,6 @@ function finanzen_menu() {
   ); 
 
   $items['finanzen/outflow/personal/edit-month/%'] = array (
-    //'title' => t('Modify outflow in personal per month'),
     'page callback' => 'finanzen_outflow_personal_edit_month',
     'page arguments' => array ( 4 ),
     'access arguments' => array('administer finanzen'),
@@ -124,7 +132,6 @@ function finanzen_menu() {
    /* --- OUTFLOW PERSONAL EXTERN -- */
 
   $items['finanzen/outflow/personal/extern/%'] = array (
-    //'title' => t('Modify outflow in extern personal per month'),
     'page callback' => 'finanzen_outflow_personal_extern',
     'page arguments' => array ( 4 ),
     'access arguments' => array('administer finanzen'),
@@ -134,7 +141,6 @@ function finanzen_menu() {
   
   /* Lista de trabajadores externos */
   $items['finanzen/outflow/personal/extern/list'] = array(
-    //'title' => t('Finanzen outflow personal extern register'),
     'page callback' => 'finanzen_outflow_personal_extern_list',
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
@@ -142,7 +148,6 @@ function finanzen_menu() {
   );
   
   $items['finanzen/outflow/personal/extern/change_status/%/%'] = array(
-    //'title' => t('Finanzen outflow personal activate/deactivate extern'),
     'page callback' => 'finanzen_outflow_personal_extern_change_status',
     'page arguments' => array ( 5,6 ),
     'access arguments' => array('administer finanzen'),
@@ -177,7 +182,6 @@ function finanzen_menu() {
   /* --- OUTFLOW SONSTIGES --- */
   
   $items['finanzen/outflow/sonstiges/general'] = array (
-    //'title' => t('Jahresübersicht Bürokosten'),
     'page callback' => 'finanzen_outflow_sonstiges_general',
     'access arguments' => array('administer finanzen'),
     'type' => MENU_CALLBACK,
@@ -185,7 +189,6 @@ function finanzen_menu() {
   ); 
   
   $items['finanzen/outflow/sonstiges/edit-month/%'] = array (
-    //'title' => t('Modify outflow in sonstiges per month'),
     'page callback' => 'finanzen_outflow_sonstiges_edit_month',
     'page arguments' => array ( 4 ),
     'access arguments' => array('administer finanzen'),
@@ -194,7 +197,6 @@ function finanzen_menu() {
   ); 
   
   $items['finanzen/outflow/sonstiges/categories'] = array(
-    //'title' => t('Finanzen outflow sonstiges categories'),
     'page callback' => 'finanzen_outflow_sonstiges_categories',
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
@@ -202,7 +204,6 @@ function finanzen_menu() {
   );
   
   $items['finanzen/outflow/sonstiges/categories/change_status/%/%'] = array(
-    //'title' => t('Finanzen outflow sonstiges activate/deactivate category'),
     'page callback' => 'finanzen_outflow_sonstiges_categories_change_status',
     'page arguments' => array ( 5,6 ),
     'access arguments' => array('administer finanzen'),
@@ -213,7 +214,6 @@ function finanzen_menu() {
   /* --- INFLOW -- */
       
   $items['finanzen/inflow/general'] = array(
-    //'title' => t('Jahresübersicht Ausgangsrechnungen'),
     'page callback' => 'finanzen_inflow_general',
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
@@ -221,7 +221,6 @@ function finanzen_menu() {
   );
   
   $items['finanzen/inflow'] = array(
-    //'title' => t('Monatsübersicht Ausgangsrechnungen'),
     'page callback' => 'finanzen_inflow',
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
@@ -229,7 +228,6 @@ function finanzen_menu() {
   );
   
   $items['finanzen/inflow/all'] = array(
-    //'title' => t('Zusammenstellung der Rechnungen'),
     'page callback' => 'finanzen_inflow_all',
     'access arguments' => array('administer finanzen'),
 	'type' => MENU_CALLBACK,
@@ -322,6 +320,30 @@ function finanzen_preprocess_page(&$vars)
       unset($vars['primary_links'][$k]);
     }
   }  
+}
+
+/* Evitamos que un proyecto (group) o usuario pueda ser borrado cuendo tiene elementos asociados en FINANZEN */
+
+function finanzen_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == "node_delete_confirm") {
+    $nodo_borrar = node_load($form['nid']['#value']);
+    if (($nodo_borrar->type == "group") && _finanzen_exist_relevant_info_for_project($form['nid']['#value'])){
+	  unset($form['actions']['submit']);
+      drupal_set_message("This Project cannot be deleted since there is relevant information related in FINANZEN module.
+	                      Please contact an administrator if you want to perform this action", "warning");
+
+    }
+  }
+  
+  if ($form_id == "user_confirm_delete") {
+	if (_finanzen_exist_relevant_info_for_user($form['_account']['#value']->uid)) {
+	  unset($form['actions']['submit']);
+	  drupal_set_message("This user cannot be deleted since there is relevant information related in FINANZEN module.
+	                      Please contact an administrator if you want to perform this action", "warning");
+    
+    }
+  }
 }
 
 /* ------------------------------------------------------------------------------ */
@@ -464,6 +486,23 @@ function _finanzen_is_weekend($date)
 {
   $weekday = date('N', $date);
   if ($weekday > 5) { return TRUE; } else { return FALSE; }
+} 
+
+/**
+ * This function calculates if the given date is weekend day
+ */
+function _finanzen_is_holyday_sikness($date, $user_id)
+{
+  $query = "SELECT ftwd.daytype FROM {finanzen_timesheet_worker_day} ftwd 
+            WHERE ftwd.date=" . $date . " AND ftwd.uid=" . $user_id;
+  $queryResult = db_query ( $query );
+  
+  if (!$resource = db_fetch_object ( $queryResult ))
+    $result = 0;
+  else
+	$result = $resource->daytype; 
+  
+  return $result;
 } 
 
 /**
@@ -734,6 +773,47 @@ function _finanzen_get_total_outflow_sonstiges_month($date, &$total) {
   }
 }
 
+function _finanzen_timesheet_is_month_closed ($date, $user_id) {
+  $query = "SELECT * FROM finanzen_timesheet_worker_month 
+	  		WHERE date=" . $date . " AND uid=" . $user_id . " AND status=1"; ;
+  $queryResult = db_query ( $query );	  
+  return (db_fetch_object($queryResult) != NULL);
+}
+
+function _finanzen_timesheet_is_relevant_worker_month ($date, $user_id) {
+	$query = "SELECT ftwhp.nid FROM {finanzen_timesheet_worker_hours_projects} ftwhp
+  	  	       WHERE ftwhp.date>=" . $date . " 
+  			   AND ftwhp.date<" . _finanzen_get_first_day_next_month($date) . " 
+  			   AND ftwhp.uid=" . $user_id;
+    $queryResult = db_query ($query);
+      
+    return (db_fetch_object($queryResult) != NULL);
+}
+
+
+function _finanzen_exist_relevant_info_for_project($project_id) {
+	$query = "SELECT nid from finanzen_inflow
+			  WHERE project_id=" . $project_id . "
+			  UNION
+			  SELECT nid from finanzen_outflow_worker_extern_month
+			  WHERE project_id=" . $project_id . "
+			  UNION 
+			  SELECT nid FROM finanzen_timesheet_worker_hours_projects
+			  WHERE project_id=" . $project_id;
+    $queryResult = db_query ($query);
+    return (db_affected_rows() != 0);
+}
+
+function _finanzen_exist_relevant_info_for_user($user_id) {
+	$query = "SELECT nid from finanzen_outflow_worker_month
+			  WHERE uid=" . $user_id . "
+			  UNION
+			  SELECT nid from finanzen_timesheet_worker_hours_projects
+			  WHERE uid=" . $user_id;
+    $queryResult = db_query ($query);
+    return (db_affected_rows() != 0);	
+}
+
 /* ------------------------------------------------------------------------------ */
 /* ---------------------------- REPORT FUNCTIONS -------------------------------- */
 /* ------------------------------------------------------------------------------ */
@@ -839,7 +919,7 @@ function _finanzen_year_reports_navigator($date)
   
   $content .= '<div class="navigator-next">';
   if ($first_day_year < $current_first_day_year) {
-	$content .= '<a title="Go to next month" href="/finanzen/' 
+	$content .= '<a title="Go to next year" href="/finanzen/' 
 	            . _finanzen_get_first_day_next_year($first_day_year) . '"> &#8811; </a>';
   }
   else { $content .= '<span class="muted"> &#8811; </span>'; }
@@ -849,7 +929,7 @@ function _finanzen_year_reports_navigator($date)
   
   $content .= '<div class="navigator-prev">';
   if ($first_day_year > ABSOLUTE_INITIAL_TIME) {
-  	$content .= '<a title="Go to previous month" href="/finanzen/' 
+  	$content .= '<a title="Go to previous year" href="/finanzen/' 
   	            . _finanzen_get_first_day_previous_year($first_day_year) . '"> &#8810; </a>';
   }
   else { $content .= '<span class="muted"> &#8810; </span>'; }
@@ -1452,7 +1532,11 @@ function finanzen_reports_project_detail ($date, $project_id) {
 	  	  	
 	  /* ROW INFLOW */	  
 	  $query4 = "SELECT * from finanzen_inflow
-	    		 WHERE project_id=" . $project_id . " AND date=" . $month_data['date'];
+	    		 WHERE project_id=" . $project_id . "
+	    		 AND date>=" . _finanzen_first_day_month($month_data['date']) . "
+	    		 AND date<" . _finanzen_get_first_day_next_month($month_data['date']);
+	
+
 	  $queryResult4 = db_query ( $query4 );
 	  	  	
 	  while ($inflow = db_fetch_object($queryResult4)) {
@@ -1747,6 +1831,126 @@ function finanzen_reports_summary_projects ( $date = 0 ) {
   }
 
   return $content;
+}
+
+function _finanzen_reports_timesheet_navigator($date)
+{ 
+  $content .= '<div class="navigator">';
+  $content .= '<div class="navigator-back"><a href="/finanzen/' . $date . '"> &#8592; zurück</a></div>';
+  $content .= '<div class="navigator-title black bold">Timesheet Mitarbeiter Übersicht</div>';
+  $content .= '<div class="navigator-next">';
+  
+  if (time() > _finanzen_get_first_day_next_year($date)) {
+    $content .= '<a title="Go to next year" href="/finanzen/reports/timesheet/' 
+	            . _finanzen_get_first_day_next_year($date) . '"> &#8811; </a>';
+  }
+  else 
+    $content .= '<span class="muted"> &#8811; </span>';
+  
+  $content .= "</div>";
+  
+  $content .= '<div class="navigator-date black">' . date('Y', $date) . "</div>";
+   
+  $content .= '<div class="navigator-prev">';
+  if ($date > ABSOLUTE_INITIAL_TIME) {
+  	$content .= '<a title="Go to previous year" href="/finanzen/reports/timesheet/' 
+  	            . _finanzen_get_first_day_previous_year($date) . '"> &#8810; </a>';
+  }
+  else
+    $content .= '<span class="muted"> &#8810; </span>';
+  
+  $content .= "</div>";
+  
+  $content .= "</div>"; // class="navigator"
+   
+  return $content;     
+}
+
+function finanzen_reports_timesheet ($date = 0) {
+  
+  if ($date == 0) {
+    $current_date = time ();
+    $first_day_year = _finanzen_first_day_year($current_date);
+  }
+  else { $first_day_year = $date; }
+  
+  $content .= _finanzen_reports_timesheet_navigator($first_day_year);
+  
+  $months_curr_year = _finanzen_list_months_year ($first_day_year);
+    
+  /* Build header */
+  $header['Mitarbeiter'] = array('data' => "Mitarbeiter", 'class' => 'column_person');
+  foreach ($months_curr_year as $month_name => $month_data) {
+    $header[$month_name] = array('data' => $month_name, 'class' => 'column_date');
+  }
+  
+  /* Get data */
+  $query = "SELECT DISTINCT ftwhp.uid FROM {finanzen_timesheet_worker_hours_projects} ftwhp
+  			INNER JOIN users ON users.uid = ftwhp.uid
+            WHERE ftwhp.date>=" . $first_day_year . "
+            AND ftwhp.date<" . _finanzen_get_first_day_next_year($first_day_year) . "
+            ORDER BY users.name";
+  $queryResult = db_query ($query);
+  
+  while ($user = db_fetch_object($queryResult)){
+    
+    $rowdata = array('Mitarbeiter' => _finanzen_get_user_name($user->uid));
+    
+    foreach ($months_curr_year as $month_name => $month_data) {
+      
+      if (_finanzen_timesheet_is_relevant_worker_month ($month_data['date'], $user->uid)) {
+      
+        if (_finanzen_timesheet_is_month_closed($month_data['date'], $user->uid)) {
+          $link_lock = '<a href="/finanzen/reports/timesheet/change_status/' . $month_data['date'] . '/' . $user->uid . 
+                       '?' . drupal_get_destination() . '"><img class="locker" src="/'. drupal_get_path('module', 'finanzen') . 
+                       '/img/lock-closed.png" /></a>';
+          $class_lock = " closed";
+      	}
+        else {
+          $link_lock = '<a href="/finanzen/reports/timesheet/change_status/' . $month_data['date'] . '/' . $user->uid . 
+                       '?' . drupal_get_destination() . '"><img class="locker" src="/'. drupal_get_path('module', 'finanzen') . 
+                       '/img/lock-open.png" /></a>';
+          $class_lock = " open";				
+        }
+          
+      	$rowdata[$month_name] = array('data' => '<a href="/timesheet/month/' . $month_data['date'] . '/' . $user->uid .'">
+      										  	 <img class="edit-pencil" src="/'. drupal_get_path('module', 'finanzen') . 
+      										  	 '/img/eye.png" /></a>' . $link_lock, 'class' => 'column_date' . $class_lock);
+      }
+      else 
+        $rowdata[$month_name] = array('data' => "<span class='muted'>leer</span>");
+    
+    }	
+    
+    $rows[] = $rowdata;
+  }
+  
+  $content .= theme_table($header, $rows, array('class' => 'finanzen timesheet timesheet-main'));
+      
+  return $content;
+}
+
+
+function finanzen_reports_timesheet_change_month_worker_status ($date, $user_id) {
+  
+  if (_finanzen_timesheet_is_month_closed($date, $user_id)) {
+     $query_delete = "DELETE FROM finanzen_timesheet_worker_month 
+     				  WHERE uid=" . $user_id . "
+     				  AND date=" . $date;
+     $query_deleteResult = db_query ( $query_delete );
+     if ($query_deleteResult)
+       drupal_set_message("Month " . date('M Y', $date) . " for " . _finanzen_get_user_name($user_id) . " opened");
+  }
+  else {
+	 $query = "INSERT into finanzen_timesheet_worker_month ( uid, date, status ) 
+               values ( %d, '%s', %d )";
+     $queryResult = db_query ( $query, $user_id, $date, 1 );
+     if ($queryResult)
+       drupal_set_message("Month " . date('M Y', $date) . " for " . _finanzen_get_user_name($user_id) . " closed");
+  }
+  
+  drupal_goto();
+	
 }
 
 

@@ -42,6 +42,75 @@ function finanzen_schema() {
     
   );
   
+  $schema['finanzen_timesheet_worker_day'] = array (
+    'description' => t('Info related to a day for a specific worker'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),   
+      'date' => array (
+        'description' => 'The Unix timestamp for the day.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ), 
+      /* Normal / Holyday / Sickness */
+      'daytype' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+    'unique keys' => array(
+      'uid_date_projectid' => array('uid', 'date'),
+    ),
+    
+  );  
+  
+  $schema['finanzen_timesheet_worker_month'] = array (
+    'description' => t('Info related to a month for a specific worker'),
+    'fields' => array (
+      'nid' => array (
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array (
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0
+      ),   
+      'date' => array (
+        'description' => 'The Unix timestamp for the month.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ), 
+      /* Closed / Open */
+      'status' => array (
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0
+      ),
+    ),
+    'primary key' => array('nid'),
+    'unique keys' => array(
+      'uid_date_projectid' => array('uid', 'date'),
+    ),
+    
+  );  
+
+  
   $schema['finanzen_outflow_worker_month'] = array(
     'description' => t('The money thet HB spends in personal monthly'),
     'fields' => array (
