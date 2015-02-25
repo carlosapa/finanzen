@@ -77,6 +77,7 @@ function finanzen_menu() {
     'file' => 'finanzen.timesheet.inc',
   );
   
+  /* Función de los administradores */
   $items['timesheet/month/%/%'] = array (
     'title' => t('Finanzen timesheet'),
     'description' => 'Timesheet',
@@ -87,6 +88,7 @@ function finanzen_menu() {
     'file' => 'finanzen.timesheet.inc',
   );
   
+  /* OBSOLETAS
   $items['timesheet/insert/%/%/%'] = array (
     'title' => t('Add hours to Project'),
     'page callback' => 'finanzen_timesheet_insert',
@@ -103,7 +105,8 @@ function finanzen_menu() {
     'access arguments' => array('add hours to projects'),
     'type' => MENU_CALLBACK,
     'file' => 'finanzen.timesheet.inc',
-  );  
+  );
+  */  
   
   $items['timesheet/edit-month/%'] = array (
     'title' => t('Monthly View'),
@@ -383,16 +386,30 @@ function finanzen_mainpage( $date = 0 ) {
 function _finanzen_detect_errors() {
   
   /* Falta profile en usuario */
-  $query = "SELECT uid, name FROM users WHERE uid!=0";
+  $query = "SELECT uid, name, status FROM users WHERE uid!=0";
   $queryResult = db_query ($query);
 
   while ($current_user = db_fetch_object($queryResult)) {
-    $query2 = "SELECT * FROM node WHERE type='profile' AND uid=" . $current_user->uid;
+    $query2 = "SELECT nid FROM node WHERE type='profile' AND uid=" . $current_user->uid;
     $queryResult2 = db_query ($query2);
-    if (db_affected_rows() == 0)
+    if (db_affected_rows() == 0) {
       drupal_set_message("User " . $current_user->name . " do not has profile. 
                           FINANZEN needs this info to distinguish between Freelacers and Employes.
                           Create it <a target='_blank' href='/user/" . $current_user->uid . "/edit/profile'>here</a>.", "warning");
+    }
+    elseif (($current_user->uid != 3) /*Pietro*/ && ($current_user->uid != 6) /*Michael*/ && ($current_user->status == 1)) {
+	    $profile = db_fetch_object($queryResult2);
+	    $query3 = "SELECT field_labour_agreement_value, field_year_vacation_days_value 
+	    		   FROM content_type_profile WHERE nid=" . $profile->nid ;
+	    $queryResult3 = db_query ($query3);
+	    $data_profile = db_fetch_object($queryResult3);
+	    if (($data_profile->field_labour_agreement_value) == "Employee" && 
+	        ($data_profile->field_year_vacation_days_value == NULL)) {
+	      drupal_set_message("User " . $current_user->name . " do not have his/her number of year vacation days specified.
+                             Please do it <a target='_blank' href='/user/" . $current_user->uid . 
+                             "/edit/profile'>here</a>.", "warning");
+        }
+    }
   }
 }
 
@@ -486,6 +503,59 @@ function _finanzen_is_weekend($date)
 {
   $weekday = date('N', $date);
   if ($weekday > 5) { return TRUE; } else { return FALSE; }
+} 
+
+/**
+ * This function calculates if the given date is weekend day
+ */
+function _finanzen_is_feiertage($date)
+{
+  $result = FALSE;
+  $day_month = date('d.m', $date);
+  
+  switch ($day_month) {
+	case "01.01" : // Neujahr
+	case "01.05" : // Maifeiertag
+	case "03.10" : // Tag der Deutschen Einheit
+	case "25.12" : // 1. Weihnachtstag
+	case "26.12" : // 2. Weihnachtstag
+	  $result = TRUE;
+	  break;
+	
+	default:
+	  $result = FALSE;
+  }
+  
+  if ($result == FALSE) {
+     $day_month_year = date('d.m.Y', $date);
+	 switch ($day_month) {
+	   case "03.04.2015" : // Karfreitag
+	   case "06.04.2015" : // Ostermontag
+	   case "14.05.2015" : // Christi Himmelfahrt
+	   case "25.05.2015" : // Pfingstmontag
+	   
+	   case "25.03.2016" : // Karfreitag
+	   case "28.03.2016" : // Ostermontag
+	   case "05.05.2016" : // Christi Himmelfahrt
+	   case "16.05.2016" : // Pfingstmontag
+	   
+	   case "14.04.2017" : // Karfreitag
+	   case "17.04.2017" : // Ostermontag
+	   case "25.05.2017" : // Christi Himmelfahrt
+	   case "05.06.2017" : // Pfingstmontag
+	   
+	   case "30.03.2018" : // Karfreitag
+	   case "02.04.2018" : // Ostermontag
+	   case "10.05.2018" : // Christi Himmelfahrt
+	   case "21.05.2018" : // Pfingstmontag	   
+	     $result = TRUE;
+	     break;
+	
+	   default:
+	     $result = FALSE;
+     }
+  }
+  return $result;
 } 
 
 /**
@@ -1881,7 +1951,7 @@ function finanzen_reports_timesheet ($date = 0) {
   /* Build header */
   $header['Mitarbeiter'] = array('data' => "Mitarbeiter", 'class' => 'column_person');
   foreach ($months_curr_year as $month_name => $month_data) {
-    $header[$month_name] = array('data' => $month_name, 'class' => 'column_date');
+    $header[$month_name] = array('data' => $month_name, 'class' => 'column_timesheet_worker');
   }
   
   /* Get data */
@@ -1915,7 +1985,7 @@ function finanzen_reports_timesheet ($date = 0) {
           
       	$rowdata[$month_name] = array('data' => '<a href="/timesheet/month/' . $month_data['date'] . '/' . $user->uid .'">
       										  	 <img class="edit-pencil" src="/'. drupal_get_path('module', 'finanzen') . 
-      										  	 '/img/eye.png" /></a>' . $link_lock, 'class' => 'column_date' . $class_lock);
+      										  	 '/img/eye.png" /></a>' . $link_lock, 'class' => $class_lock);
       }
       else 
         $rowdata[$month_name] = array('data' => "<span class='muted'>leer</span>");

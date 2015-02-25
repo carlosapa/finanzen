@@ -135,11 +135,12 @@ function _finanzen_timesheet_summary ( $date, $user_id ) {
 	    $total_hours += $elem->hours;
     }
     
-    $rowdata = array('concept' => array('data' => "Total hours", 'class' => 'not-empty bold')) + 
+    $rowdata = array('concept' => array('data' => "Arbeitsstunde gesamt", 'class' => 'not-empty bold')) + 
 		       array('total' => array('data' => $total_hours, 'class' => 'not-empty'));
     $rows[] = array('data' => $rowdata, 'class' => 'light-grey');
     
-    if (_finanzen_get_user_labour_agreement($user_id) == "Employee") {
+    /* Contabilizamos días de vacaciones y enfermedad sólo para empleados fijos y a partir de 2015 */
+    if ((_finanzen_get_user_labour_agreement($user_id) == "Employee") && ($date >= 1420066800)) {
         
         $query = "SELECT field_year_vacation_days_value FROM content_type_profile
 	              INNER JOIN node ON node.type='profile' AND node.uid=" . $user_id . "
@@ -148,12 +149,12 @@ function _finanzen_timesheet_summary ( $date, $user_id ) {
 	    $elem = db_fetch_object($queryResult);
 	    
 	    if ($elem->field_year_vacation_days_value == NULL)
-	      $year_vacation_days = "undefined";
+	      $jahresurlaub = "unbekannt";
 	    else
-	      $year_vacation_days = $elem->field_year_vacation_days_value;
+	      $jahresurlaub = $elem->field_year_vacation_days_value;
 
-		$rowdata = array('concept' => array('data' => "Year Vacation days", 'class' => 'not-empty')) + 
-		           array('total' => array('data' => $year_vacation_days, 'class' => 'not-empty'));
+		$rowdata = array('concept' => array('data' => "Jahresurlaub", 'class' => 'not-empty bold')) + 
+		           array('total' => array('data' => $jahresurlaub, 'class' => 'not-empty'));
 		$rows[] = array('data' => $rowdata, 'class' => 'light-grey');
 	
 		$now = time();
@@ -164,11 +165,24 @@ function _finanzen_timesheet_summary ( $date, $user_id ) {
      	          AND ftwd.uid=" . $user_id . " AND ftwd.daytype=1";
 
 	    $queryResult = db_query ($query);
-	    $already_taken = db_affected_rows();
+	    $beanspruchter_urlaub = db_affected_rows();
 		
-		$rowdata = array('concept' => array('data' => "Already taken", 'class' => 'not-empty bold')) + 
-		           array('total' => array('data' => $already_taken, 'class' => 'not-empty'));
+		$rowdata = array('concept' => array('data' => "Beanspruchter Urlaub", 'class' => 'not-empty bold')) + 
+		           array('total' => array('data' => $beanspruchter_urlaub, 'class' => 'not-empty'));
 		$rows[] = array('data' => $rowdata, 'class' => 'light-grey');
+		
+		$query = "SELECT * FROM {finanzen_timesheet_worker_day} ftwd 
+     	          WHERE ftwd.date>=" . _finanzen_first_day_year($date) . " 
+     	          AND ftwd.date<" . $now . " 
+     	          AND ftwd.uid=" . $user_id . " AND ftwd.daytype=2";
+
+	    $queryResult = db_query ($query);
+	    $krankentage = db_affected_rows();
+		
+		$rowdata = array('concept' => array('data' => "Krankentage", 'class' => 'not-empty bold')) + 
+		           array('total' => array('data' => $krankentage, 'class' => 'not-empty'));
+		$rows[] = array('data' => $rowdata, 'class' => 'light-grey');
+		
 	
 	}
 	
@@ -222,7 +236,7 @@ function finanzen_timesheet( $date = 0 ) {
 	      $total_hours_worker_month = 0;
 	   	  
 	   	  $rowdata['date'] = date('M Y', $month_data['date']);
-	                           
+	   	                       
 	      foreach ($all_projects as $project) {
 	          $total_hours_worker_month_project = 0;
 		      $query = "SELECT ftwhp.nid, ftwhp.hours FROM {finanzen_timesheet_worker_hours_projects} ftwhp 
@@ -259,16 +273,26 @@ function finanzen_timesheet( $date = 0 ) {
  */
 function finanzen_timesheet_month( $first_day_month, $user_id ) {
 
-  $user = user_load($user_id);
+  global $user;
+  $curr_user = $user;
+  
+  $user_timesheet = user_load($user_id);
   
   $month = date('m', $first_day_month);
   $year = date('Y', $first_day_month);
   
-  $content .= _finanzen_timesheet_month_navigator($first_day_month, $user);
+  
+  if (($curr_user->uid != $user_id) ||  (in_array("administrator", $curr_user->roles)) || ($curr_user->uid == 1)){ 
+  // Si el usuario dueño del timsheet no es el mismo que el que mira, el que mira es administrador o el que mira es Diego.
+    $content .= _finanzen_timesheet_month_navigator($first_day_month, $user_timesheet);
+  }
+  else {
+    $content .= '<div class="navigator"><div class="navigator-date black">' . date('F Y', $first_day_month) . '</div></div>';
+  } 
   
   $number_days = _finanzen_days_in_month($month, $year);
 
-  $all_projects = $user->og_groups;
+  $all_projects = $user_timesheet->og_groups;
   
   $header = array('date' => array('data' => t("Date"),'class' => 'column_date'));
   
@@ -282,12 +306,13 @@ function finanzen_timesheet_month( $first_day_month, $user_id ) {
   for ($i = 1; $i <= $number_days; $i++) {
     $day = mktime(0,0,0,$month, $i, $year);
     $rowdata = array ();
-    $rowdata['date'] = date('d.m.Y, D', $day);
+    //$rowdata['date'] = date('d.m.Y, D', $day);
+    $rowdata['date'] = array ('data' => date('d.m.Y, D', $day), 'class' => 'column_date');
         
     foreach ($all_projects as $project) {
       $query = "SELECT ftwhp.nid, ftwhp.hours FROM {finanzen_timesheet_worker_hours_projects} ftwhp 
                 WHERE ftwhp.date=%d AND ftwhp.uid=%d AND ftwhp.project_id=%d";
-      $queryResult = db_query ( $query, $day, $user->uid, $project[nid] );
+      $queryResult = db_query ( $query, $day, $user_id, $project[nid] );
       $resource = db_fetch_object ( $queryResult );
       
       if (($resource) && ($resource->hours != 0)){
@@ -299,12 +324,12 @@ function finanzen_timesheet_month( $first_day_month, $user_id ) {
           $query_delete = "DELETE FROM finanzen_timesheet_worker_hours_projects WHERE nid='" . $resource->nid . "'";
           $query_deleteResult = db_query ( $query_delete );
         }
-        $link = '/timesheet/insert/' . $project[nid] . '/' . $day . '/' . $user->uid ;
+        $link = '/timesheet/insert/' . $project[nid] . '/' . $day . '/' . $user_id ;
         $rowdata[$project[title]] = '<span class="edit-empty">0 hr</span>';
       }
     }
     
-    if (_finanzen_is_weekend($day))
+    if (_finanzen_is_weekend($day) || _finanzen_is_feiertage($day))
       $row = array('data' => $rowdata, 'class' => "weekend");
     elseif (_finanzen_is_holyday_sikness($day, $user_id) == 1)
       $row = array('data' => $rowdata, 'class' => "holydays");
@@ -316,13 +341,13 @@ function finanzen_timesheet_month( $first_day_month, $user_id ) {
     $rows[] = $row; 
   }
   
-  $content .= theme_table($header, $rows, array('class' => 'finanzen timesheet'));
+  $content .= theme_table($header, $rows, array('class' => 'finanzen timesheet timesheet-admin-view'));
   
   return $content;
 }
 
-/* --------------------- Insert time - project --------------------------- */
-
+/* --------------------- Insert time - project OBSOLETA --------------------------- */
+/*
 function finanzen_timesheet_insert ( $project_id, $date, $user_id )
 {
   $content .= _finanzen_timesheet_insert_update_navigator($date);
@@ -396,9 +421,10 @@ function finanzen_timesheet_insert_form_validate($form, &$form_state) {
     form_set_error('minutes', t('Minutes: You must enter a numeric value between 0 and 59.'));
   }
 }
+*/
 
-/* --------------------- Update time - project --------------------------- */
-
+/* --------------------- Update time - project OBSOLETA --------------------------- */
+/*
 function finanzen_timesheet_update ( $id, $date )
 {
   $content .= _finanzen_timesheet_insert_update_navigator($date);
@@ -474,14 +500,24 @@ function finanzen_timesheet_update_form_validate($form, &$form_state) {
     form_set_error('minutes', t('Minutes: You must enter a numeric value between 0 and 59.'));
   }
 }
-
+*/
 /* --------------------- Edit month --------------------------------- */
 
 function finanzen_timesheet_edit_month ( $first_day_month )
 {
-  $content .= _finanzen_timesheet_edit_month_navigator ($first_day_month);
-  $content .= drupal_get_form ('finanzen_timesheet_edit_month_form', $first_day_month);
+  global $user;
+  if (_finanzen_timesheet_is_month_closed($first_day_month, $user->uid)) {
+    drupal_set_message("Month is closed, you cannot modify it. 
+                        If you want to modify this month, contact an administrator", "warning");
+    $content .= finanzen_timesheet_month( $first_day_month, $user->uid );
+  }
+  else {
+    $content .= _finanzen_timesheet_edit_month_navigator ($first_day_month);
+    $content .= drupal_get_form ('finanzen_timesheet_edit_month_form', $first_day_month);
+  }
+  
   return $content;
+    
 }
 
 
@@ -494,7 +530,7 @@ function finanzen_timesheet_edit_month_form ( $form, $first_day_month )
   
   $month = date('m', $first_day_month);
   $year = date('Y', $first_day_month);
-  $daytype = array("Normal", "Holyday", "Sickness");
+  $daytype = array("Arbeitstag", "Urlaubstag", "Krankentag");
 
   $all_projects = $user->og_groups;
   
@@ -508,7 +544,7 @@ function finanzen_timesheet_edit_month_form ( $form, $first_day_month )
 
     $day = mktime(0,0,0,$month, $i, $year);
     
-    if (!_finanzen_is_weekend($day)) {
+    if ((!_finanzen_is_weekend($day)) && (!_finanzen_is_feiertage($day))) {
     
        $query = "SELECT ftwd.nid, ftwd.daytype FROM {finanzen_timesheet_worker_day} ftwd 
                  WHERE ftwd.date=" . $day . " AND ftwd.uid=" . $user->uid;
@@ -603,19 +639,22 @@ function theme_finanzen_timesheet_edit_month_form_theme ( $form ) {
   foreach (element_children($form['projects']) as $day) {
     $rowdata = array();
     
-    if (!_finanzen_is_weekend($day)) {
+    if ((!_finanzen_is_weekend($day)) && (!_finanzen_is_feiertage($day))) {
     	$rowdata[] = drupal_render($form['daytype'][$day]);
     }
-    else 
-      $rowdata[] = "Weekend";
-      
-    $rowdata[] = date('d.m.Y, D', (float)$day);
+    elseif (_finanzen_is_weekend($day))
+      $rowdata[] = "Wochenende";
+    else
+      $rowdata[] = "Feiertag";
+
+   // $rowdata[] = date('d.m.Y, D', (float)$day);
+    $rowdata[] = array ('data' => date('d.m.Y, D', (float)$day), 'class' => 'column_date');
     
     for ($j=0;$j<$i;$j++) {
 	  $rowdata[] = drupal_render($form['projects'][$day][$projects[$j]]);
     }
       
-    if (_finanzen_is_weekend($day))
+    if (_finanzen_is_weekend($day) || _finanzen_is_feiertage($day))
       $row = array('data' => $rowdata, 'class' => "weekend");
     elseif (_finanzen_is_holyday_sikness($day, $user->uid) == 1)
       $row = array('data' => $rowdata, 'class' => "holydays");

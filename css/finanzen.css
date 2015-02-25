@@ -25,14 +25,12 @@ div.navigator-prev a,
 div.navigator-back a { color: #666666; }
 
 div.navigator-date {
-  /*float: left;
-  padding: 5px 0 0 0px;*/
   float: right;
   padding: 5px;
-  font-size: 14pt;
+  font-size: 13pt;
   color: #666666;
   margin: 0px 5px;
-  /*margin:0 10px 5px 0;*/
+  text-transform: uppercase;
 }
 
 div.navigator-title {
@@ -189,6 +187,7 @@ span.muted {
 }
 
 .column_total { width: 90px; }
+.column_timesheet_worker { width: 60px; }
 .column_outflow_category { width: 200px; }
 .column_person  { width: 250px; }
 .column_project { width: 100px; }
@@ -197,6 +196,8 @@ span.muted {
 .column_concept { width: 140px; }
 .column_invoice_nr { width: 100px; }
 .column_daytype { width: 100px; }
+
+table.timesheet-main .column_person  { width: 160px; }
 
 table.all-invoices { width: 700px !important; }
 
@@ -222,11 +223,9 @@ table.finanzen {
   min-width: 320px;
 }
 
-/*
-table.timesheet {
-  min-width: 370px;
+table.timesheet-admin-view {
+  min-width: 500px;
 }
-*/
 
 table.finanzen-klein {
   width: auto;
@@ -329,4 +328,10 @@ tr.empty-row {
 
 table th {
   font-weight: bold !important;
+}
+
+table th.column_date, 
+table td.column_date {
+  text-align: left;
+  padding-left: 10px;
 }
