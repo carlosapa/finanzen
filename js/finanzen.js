@@ -89,3 +89,23 @@ var center_month_name = function (block) {
 	
 };
 
+function show_hide_spend_paid() {
+    var x = document.getElementById("paid-status-select").value;
+    if (x != 2) {
+      document.getElementById("spend_paid_div").style.display = "none";
+    }
+    else {
+      document.getElementById("spend_paid_div").style.display = "block";
+    }
+
+}
+
+function show_inactive_projects() {
+    document.getElementById("div-inactive-projects").style.display = "block";
+    document.getElementById("show-more-projects").style.display = "none";
+}
+
+function hide_inactive_projects() {
+    document.getElementById("div-inactive-projects").style.display = "none";
+    document.getElementById("show-more-projects").style.display = "block";
+}

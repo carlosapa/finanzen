@@ -103,7 +103,7 @@ table.outflow-personal { width: 300px !important; }
 
 table.outflow-personal-extern,
 #finanzen-inflow-add-form,
-#finanzen-outflow-personal-extern-add-form { width: 575px !important; }
+#finanzen-outflow-personal-extern-add-form { width: 700px !important; }
 
 table.inflow { width: 600px !important; }
 
@@ -189,9 +189,11 @@ span.muted {
 .column_total { width: 90px; }
 .column_timesheet_worker { width: 60px; }
 .column_outflow_category { width: 200px; }
-.column_person  { width: 250px; }
+.column_person { width: 250px; }
 .column_project { width: 100px; }
-.column_money   { width: 90px; }
+.column_money { width: 90px; }
+.column_money_gesamt { width: 95px; }
+.column_vertrag { width: 95px; }
 .column_date { width: 120px; }
 .column_concept { width: 140px; }
 .column_invoice_nr { width: 100px; }
@@ -203,10 +205,10 @@ table.all-invoices { width: 700px !important; }
 
 /* Anchos particulares por tablas */
 .timesheet-edit-month .column_project { width: 90px; }
-.inflow-general .column_project { width: 130px; }
 table.timesheet th.column_project,
 table.timesheet-main th.column_date { width: 70px; }
 table.timesheet-main th.column_total { width: 60px; }
+table.inflow-general .column_project { width: 70px; }
 
 table.timesheet-edit-month span.form-required { display:none; }
 
@@ -308,6 +310,11 @@ table.timesheet th {
   color: #000 !important;
 }
 
+.all-invoices .teilbezahlt {
+  background-color: #FFFFBF;
+  color: #000 !important;
+}
+
 tr.empty-row td {
   border-left: 1px solid white;
   border-right: 1px solid white;
@@ -334,4 +341,51 @@ table th.column_date,
 table td.column_date {
   text-align: left;
   padding-left: 10px;
+}
+
+table.finanzen th {
+  color: #000;
+}
+
+.page-finanzen h1.page-title {
+  display:none;
+}
+
+body.layout-wide #content .page-region {
+  padding: 20px 0px !important;
+}
+
+#block-menu-menu-menu-finanzen a:hover {
+  color: #48a;
+  font-weight: bold;
+  background: none;
+}
+
+table.finanzen tr {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Show-hide inactive projects */
+
+#div-inactive-projects {
+  display:none;
+}
+
+#show-more-projects,
+#show-less-projects {
+  clear:both;
+}
+
+#show-more-projects button,
+#show-less-projects button {
+  background-color: #eee;
+  border: 0;
+  font-size: 1em;
+}
+
+#show-more-projects button:hover,
+#show-less-projects button:hover {
+  background-color: #ddd;
+  cursor: pointer;
 }

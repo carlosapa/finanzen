@@ -38,7 +38,7 @@ function _finanzen_timesheet_month_navigator($date, $user)
   else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
   
-  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date bold black">' . date('F Y', $date) . '</div>';
   
   $content .= '<div class="navigator-prev">';
   if ($date > $user_first_day_month) {
@@ -60,7 +60,7 @@ function _finanzen_timesheet_edit_month_navigator ( $date )
 {
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/timesheet/' . $date . '"> &#8592; zurück </a></div>';
-  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date bold black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
@@ -106,7 +106,7 @@ function _finanzen_timesheet_navigator($date, $user_name, $user_created)
   else { $content .= '<span class="muted"> &#8811; </span>'; }
   $content .= "</div>";
   
-  $content .= '<div class="navigator-date black">' . date('Y', $first_day_year) . '</div>';
+  $content .= '<div class="navigator-date bold black">' . date('Y', $first_day_year) . '</div>';
   
   $content .= '<div class="navigator-prev">';
   if ($first_day_year > $user_created) {
@@ -232,7 +232,7 @@ function finanzen_timesheet( $date = 0 ) {
     /* Get data */
     foreach ($months_curr_year as $month_name => $month_data) {
     
-      if ((time() >= $month_data['date']) && ($first_month_user <= $month_data['date'])) {
+      if (/*(time() >= $month_data['date']) &&*/ ($first_month_user <= $month_data['date'])) {
 	      $total_hours_worker_month = 0;
 	   	  
 	   	  $rowdata['date'] = date('M Y', $month_data['date']);
@@ -287,7 +287,7 @@ function finanzen_timesheet_month( $first_day_month, $user_id ) {
     $content .= _finanzen_timesheet_month_navigator($first_day_month, $user_timesheet);
   }
   else {
-    $content .= '<div class="navigator"><div class="navigator-date black">' . date('F Y', $first_day_month) . '</div></div>';
+    $content .= '<div class="navigator"><div class="navigator-date bold black">' . date('F Y', $first_day_month) . '</div></div>';
   } 
   
   $number_days = _finanzen_days_in_month($month, $year);

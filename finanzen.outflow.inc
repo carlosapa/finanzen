@@ -66,11 +66,11 @@ function finanzen_reports_outflow_personal( $date = 0 ) {
   $row_freelancers_gesamt = array();
   $row_freelancers_gesamt['person'] = "Gesamt Freelancers";
   $row_angestellete_gesamt = array();
-  $row_angestellete_gesamt['person'] = "Gesamt Angestellete";  
+  $row_angestellete_gesamt['person'] = "Gesamt Angestellten";  
   $total_all_users_year = 0;
   
   $months_curr_year = _finanzen_list_months_year ($first_day_month, 1);
-  $header = array('person' => array('data' => t("Eigeneleistung"),'class' => 'bold black column_person')) + 
+  $header = array('person' => array('data' => t("Freelancers"),'class' => 'bold black column_person')) + 
   			$months_curr_year + array('total' => array('data' => t("Gesamt"),'class' => 'column_total'));
                     
   /* $query = "SELECT DISTINCT finanzen_outflow_worker_month.uid FROM finanzen_outflow_worker_month 
@@ -199,7 +199,7 @@ function finanzen_reports_outflow_personal_extern( $date = 0 ) {
   $total_all_users_year = 0;
   
   $months_curr_year = _finanzen_list_months_year ($first_day_month, 4); 
-  $header = array('name' => array('data' => t("Fremdeleistung"),'class' => 'bold black column_person')) + 
+  $header = array('name' => array('data' => t("Fremdleistungen"),'class' => 'bold black column_person')) + 
             $months_curr_year +
             array('total' => array('data' => t("Gesamt"),'class' => 'column_total'));
                     
@@ -212,7 +212,7 @@ function finanzen_reports_outflow_personal_extern( $date = 0 ) {
   while ($extern = db_fetch_object($queryResult)){
     $row = array('name' => array('data' => _finanzen_outflow_personal_extern_get_extern_name($extern->extern_id),  
                                  'class' => 'not-empty'));
-    $last_row['name'] = "Gesamt Beratungen";
+    $last_row['name'] = "Gesamt Fremdleistungen";
     
     $total_user_year = 0;
 	
@@ -270,7 +270,7 @@ function _finanzen_outflow_personal_edit_month_navigator ( $date )
 {
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/general/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date bold black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
@@ -520,7 +520,7 @@ function _finanzen_outflow_personal_extern_navigator ( $date )
 {
   $content .= '<div class="navigator">';
   $content .= '<div class="navigator-back"><a href="/finanzen/outflow/personal/general/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date bold black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
@@ -847,7 +847,7 @@ function _finanzen_outflow_sonstiges_general_navigator($date)
     
   $content .= "</div>";
   
-  $content .= '<div class="navigator-date black">' . date('Y', $date) . "</div>";
+  $content .= '<div class="navigator-date bold black">' . date('Y', $date) . "</div>";
    
   $content .= '<div class="navigator-prev">';
   if ($date > ABSOLUTE_INITIAL_TIME) {
@@ -962,7 +962,7 @@ function _finanzen_outflow_sonstiges_edit_month_navigator ( $date )
   $content .= '<div class="navigator">';
   //$content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/' . $date . '"> &#8592; zurück</a></div>';
   $content .= '<div class="navigator-back"><a href="/finanzen/outflow/sonstiges/general/' . $date . '"> &#8592; zurück</a></div>';
-  $content .= '<div class="navigator-date black">' . date('F Y', $date) . '</div>';
+  $content .= '<div class="navigator-date bold black">' . date('F Y', $date) . '</div>';
   $content .= '</div>';
   
   return $content;
