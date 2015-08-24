@@ -17,6 +17,10 @@ function finanzen_inflow_general ( $date = 0 )
   return $content;
 }
 
+
+
+
+
 /**
  * This function outputs a Inflow month navigator
  */
